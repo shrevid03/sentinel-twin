@@ -100,3 +100,50 @@
   };
   const iv = setInterval(() => { try { if (hookGraph()) clearInterval(iv); } catch { /* graph not ready */ } }, 500);
 })();
+
+/* ---------- command-center charts: decisions donut, defense gauge, KPI sparklines (real data only) ---------- */
+(() => {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let donut = null;
+  const hist = [];  // stats snapshots since this page opened
+  const spark = (vals, color) => {
+    if (vals.length < 2) return "";
+    const lo = Math.min(...vals), hi = Math.max(...vals), w = 64, h = 20, span = hi - lo || 1;
+    const pts = vals.map((v, i) => `${(i / (vals.length - 1) * w).toFixed(1)},${(h - 2 - (v - lo) / span * (h - 4)).toFixed(1)}`).join(" ");
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  };
+  window.onStats = (s) => {
+    hist.push({ live: s.live_orders, approved: s.approved, blocked_usd: s.blocked_usd, rate: s.live_orders ? s.approved / s.live_orders : 0 });
+    if (hist.length > 30) hist.shift();
+    // per-poll deltas = orders per interval; approval rate and blocked $ as running series
+    const per = hist.slice(1).map((h, i) => Math.max(0, h.live - hist[i].live));
+    const tiles = document.querySelectorAll("#kpis .kpi");
+    const add = (idx, svg) => { const t = tiles[idx]; if (t && svg && !t.querySelector(".spark")) t.insertAdjacentHTML("beforeend", svg); };
+    add(2, spark(per, "#0070E0")); add(3, spark(hist.map((h) => h.rate), "#1E8E3E")); add(5, spark(hist.map((h) => h.blocked_usd), "#D93025"));
+    const data = [s.approved, s.review, s.blocked], n = s.live_orders;
+    document.getElementById("donut-n").textContent = n.toLocaleString();
+    const lg = document.getElementById("donut-legend");
+    if (lg) lg.innerHTML = [["Approved", "#0070E0", s.approved], ["Sent to review", "#009CDE", s.review], ["Blocked", "#003087", s.blocked]]
+      .map(([l, c, v]) => `<span><i style="background:${c}"></i>${l} <b>${v}</b> · ${n ? Math.round(v / n * 100) : 0}%</span>`).join("");
+    if (!window.Chart) return;
+    if (donut) { donut.data.datasets[0].data = data; donut.update(); return; }
+    donut = new Chart(document.getElementById("decision-donut"), { type: "doughnut",
+      data: { labels: ["Approved", "Sent to review", "Blocked"], datasets: [{ data, backgroundColor: ["#0070E0", "#009CDE", "#003087"], borderColor: "#fff", borderWidth: 3, hoverOffset: 6 }] },
+      options: { cutout: "72%", maintainAspectRatio: false, plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw} (${n ? Math.round(c.raw / n * 100) : 0}%)` } } } } });
+  };
+  window.renderGauge = (d) => {
+    const el = document.getElementById("gauge"); if (!el) return;
+    if (!d) { el.innerHTML = `<div class="gauge-empty"><p class="muted">No drill yet. Run one to score how much attack traffic the hardened policy intercepts.</p><button id="gauge-run">Run defense drill</button></div>`;
+      document.getElementById("gauge-run").onclick = () => { showTab("drill"); runDrill(); }; return; }
+    const s = d.summary || {}, v = d.chosen ? s.catch_rate_after : s.catch_rate_before, before = s.catch_rate_before;
+    const pctv = Math.max(0, Math.min(1, v || 0)), ang = -90 + 180 * pctv;
+    el.innerHTML = `<svg class="gaugesvg" viewBox="0 0 220 130" role="img" aria-label="Defense score ${(pctv * 100).toFixed(1)} percent">
+      <defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#D93025"/><stop offset=".55" stop-color="#009CDE"/><stop offset="1" stop-color="#1E8E3E"/></linearGradient></defs>
+      <path d="M20 115 A90 90 0 0 1 200 115" fill="none" stroke="#E3E8EF" stroke-width="16" stroke-linecap="round"/>
+      <path d="M20 115 A90 90 0 0 1 200 115" fill="none" stroke="url(#gg)" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="${(pctv * 100).toFixed(1)} 100"/>
+      <g class="needle" style="transform:rotate(${reduce ? ang : -90}deg)"><line x1="110" y1="115" x2="110" y2="40" stroke="#003087" stroke-width="3.5" stroke-linecap="round"/><circle cx="110" cy="115" r="7" fill="#003087"/></g>
+      </svg><div class="gauge-val"><b>${(pctv * 100).toFixed(1)}%</b><span>of attack $ intercepted${d.chosen && before != null ? ` · was ${(before * 100).toFixed(1)}%` : ""}</span></div>`;
+    if (!reduce) requestAnimationFrame(() => requestAnimationFrame(() => { const n = el.querySelector(".needle"); if (n) n.style.transform = `rotate(${ang}deg)`; }));
+  };
+})();

@@ -47,6 +47,7 @@ async function loadStats() {
     kpi("blocked", `${s.blocked} · ${money(s.blocked_usd)}`, "bad"), kpi("high-risk accounts", s.high_risk_accounts, "bad"),
     kpi("frozen by investigator", s.frozen), kpi("GAT test AUC", s.model.test_auc ?? "–", "ok"),
   ].join("");
+  window.lastStats = s; window.onStats?.(s);
 }
 
 /* ---------------- graph ---------------- */

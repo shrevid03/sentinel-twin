@@ -145,6 +145,7 @@ async function loadHero() {
   $("#hero-proof").innerHTML = real
     ? `<span class="proof">✓ Real PayPal sandbox payment captured · order ${esc(real.paypal_order_id)} · ${money(real.total)}</span>` : "";
   if (!d) {
+    window.renderGauge?.(null);
     $("#loop-card").innerHTML = `<div class="loop-cta"><div><h3>Attack → Analyze → Harden → Verify</h3>
       <p class="muted" style="margin:0">No drill yet. One click runs the red team against a frozen copy of the twin, searches for a safer policy and replays the same attacks.</p></div>
       <button id="loop-run">Run defense drill</button></div>`;
@@ -152,6 +153,7 @@ async function loadHero() {
     return;
   }
   const s = d.summary || {};
+  window.renderGauge?.(d);
   const step = (n, title, v) => `<div class="step"><b><span class="n">${n}</span>${title}</b><span class="v">${v}</span></div>`;
   $("#loop-card").innerHTML = `<div class="cardhead"><h3>Latest defense drill</h3><button class="ghost" id="loop-open">Open drill</button></div>
     <div class="loop">
