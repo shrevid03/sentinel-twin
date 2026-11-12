@@ -670,13 +670,14 @@ class Twin:
 
     def fork(self):
         with self.lock:
-            lock, hook = self.lock, getattr(self, "on_event", None)
-            self.lock, self.on_event = None, None
-            try:
-                twin = copy.deepcopy(self)
-            finally:
-                self.lock, self.on_event = lock, hook
-            twin.lock = threading.RLock()
+            # Never touch the live twin's lock or hook while copying: other request threads may be
+            # using them. The memo makes deepcopy give the fork a fresh lock and no event hook.
+            memo = {id(self.lock): threading.RLock()}
+            hook = getattr(self, "on_event", None)
+            if hook is not None:
+                memo[id(hook)] = None
+            twin = copy.deepcopy(self, memo)
+            twin.on_event = None
             return twin
 
 
