@@ -15,13 +15,13 @@ status = {"enabled": False, "searches": 0, "errors": 0, "last_error": None}
 
 GIFT_CARD = re.compile(r"gift\s*card|e-?gift|voucher", re.I)
 CATEGORIES = [
+    ("apparel", r"shirt|\btee\b|sweatshirt|shoe|sock|hoodie|jacket|dress|yoga|apparel"),
     ("coffee", r"coffee|espresso|pour.?over|french press|cold brew|grinder|\bmug\b|latte|barista"),
     ("kitchen", r"kitchen|cook|\bpan\b|knife|spice|tea\b|teapot|kettle"),
     ("electronics", r"headphone|earbud|charger|keyboard|speaker|watch|usb|bluetooth|camera"),
     ("books", r"\bbook\b|hardcover|paperback|novel"),
     ("outdoor", r"backpack|tent|bottle|hiking|camp"),
     ("home", r"candle|decor|throw|blanket|lamp|vase"),
-    ("apparel", r"shirt|shoe|sock|hoodie|jacket|dress|yoga"),
     ("plants", r"plant|seed|garden"),
     ("gaming", r"game|controller|console"),
 ]
