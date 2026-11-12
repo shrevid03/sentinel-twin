@@ -108,8 +108,8 @@ $("#auto").onchange = (e) => api("/api/simulate", { auto: e.target.checked });
 function renderTrace(el, trace) {
   el.innerHTML = trace.map((t) => t.type === "thought"
     ? `<li><span class="tag ${t.agent.split(" ")[0]}">${esc(t.agent)}</span><i class="muted">${esc(t.text)}</i></li>`
-    : `<li><span class="tag ${t.agent.split(" ")[0]}">${esc(t.agent)}</span><b>${esc(t.tool)}</b> <small class="muted">${t.ms}ms</small><br>
-       <code>${esc(JSON.stringify(t.input)).slice(0, 160)}</code><br><code>→ ${esc(typeof t.output === "string" ? t.output : JSON.stringify(t.output)).slice(0, 260)}</code></li>`).join("");
+    : `<li><span class="tag ${t.agent.split(" ")[0]}">${esc(t.agent)}</span><b>${esc(t.tool)}</b> <small class="muted">${t.ms}ms</small>
+       <details><summary>Show trace</summary><code>${esc(JSON.stringify(t.input)).slice(0, 400)}</code><br><code>→ ${esc(typeof t.output === "string" ? t.output : JSON.stringify(t.output)).slice(0, 800)}</code></details></li>`).join("");
 }
 
 /* ---------------- concierge ---------------- */
@@ -160,8 +160,16 @@ function loadPayPalSdk() {
 }
 async function renderPay(co) {
   const slot = $("#paypal-slot");
-  slot.innerHTML = `<div class="paybox"><b>Approve ${money(co.total)} with PayPal</b> <small class="muted">order ${esc(co.paypal_order_id)} · risk ${co.risk}</small>
-    <div>${co.cart.map((c) => esc(`${c.qty} × ${c.name} ($${c.price})`)).join("<br>")}</div><div id="pp-buttons" style="margin-top:8px"></div></div>`;
+  let rc = null;
+  if (co.receipt_id) { try { rc = await api("/api/receipts/" + encodeURIComponent(co.receipt_id)); } catch {} }
+  const dec = rc?.risk?.decision || "approve";
+  const checks = rc?.mandate_checks || [];
+  slot.innerHTML = `<div class="paybox">
+    ${co.cart.map((c) => `<div class="item"><span>${esc(c.qty > 1 ? c.qty + " × " : "")}${esc(c.name)}</span><span class="price">${money(c.price * (c.qty || 1))}</span></div>`).join("")}
+    ${checks.length ? `<ul class="checks">${checks.map((c) => `<li class="${c.pass ? "" : "no"}">${esc(c.check)}</li>`).join("")}</ul>` : ""}
+    <div class="meta"><span>Risk decision <span class="decision ${esc(dec)}">${esc(dec)}</span> · score ${Number(co.risk ?? rc?.risk?.score ?? 0).toFixed(2)}</span>
+      <span>PayPal order ${esc(co.paypal_order_id)}${co.receipt_id ? ` · <a href="#" class="rcpt-link" data-rcpt="${esc(co.receipt_id)}">Why? (receipt)</a>` : ""}</span></div>
+    <div id="pp-buttons"></div></div>`;
   const done = (status) => { slot.innerHTML = `<div class="paybox done">✅ PayPal capture <b>${esc(status)}</b> for ${esc(co.paypal_order_id)}</div>`; refresh(); loadMandate(); window.loadHero?.(); };
   if (CFG.paypal_mode === "sandbox" && CFG.paypal_client_id) {
     try {
