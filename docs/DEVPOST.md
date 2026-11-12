@@ -9,7 +9,7 @@ AI agents are starting to spend money for people. For a small merchant on PayPal
 ## What it does
 Sentinel Twin detects a potential attack, explains the risk, tests its defenses against evolving threats, and stops unsafe transactions before money moves:
 
-1. **An agent pays with PayPal.** The shopping agent reads the buyer's spending mandate, searches, and checks out with PayPal Orders v2. The buyer approves with the PayPal button and the server captures.
+1. **An agent buys a real product and pays with PayPal.** The shopping agent (Gemini) reads the buyer's spending mandate and searches real products from 25,000+ retailers through **Channel3** (with a demo catalog fallback), then checks out with PayPal Orders v2. The buyer approves with the official PayPal button in the sandbox and the server captures it exactly once: a real **PayPal sandbox capture**, shown as COMPLETED in the Ledger and on the Command center.
 2. **The twin checks every order first.** Every buyer, device, IP and merchant is a node in a live graph. A graph attention network scores the order on the would-be graph and explains why. Only an *approve* decision creates a PayPal order: *review* holds it for a human, *block* stops it. Every agent checkout leaves a **decision receipt**.
 3. **A red team attacks a safe copy.** An adaptive red team agent runs six playbooks (fraud rings, card testing, account takeover, synthetic identities, device farms, prompt injection) on a fork of the twin, then changes tactics to evade whatever caught it.
 4. **The what-if simulator measures the fix.** It replays recent traffic plus the red team's attacks under a proposed policy, and reports fraud intercepted (blocked or sent to review), fraud missed and good customers affected.
@@ -17,6 +17,8 @@ Sentinel Twin detects a potential attack, explains the risk, tests its defenses 
 6. **A human approves anything consequential.** The investigator agent maps the ring with real graph evidence and files a case, but refunds and account restrictions are only proposals until the merchant approves them in a review queue with an audit trail.
 
 Everything works by chat or voice in 10 Indian languages.
+
+**A UI that tells the story.** A light, fintech-style redesign with original artwork: a command center with a defense-score gauge and decisions donut, and the twin drawn as a constellation in blue fog. The GAT's fraud rings show as labelled coral clusters you can click to explain, and the Defense drill shows an animated attack flow (arrows through the shield before hardening, deflected after) from the real drill result. All graphics are inline SVG, CSS and canvas, with no extra dependencies, and they respect reduced-motion settings.
 
 ## The result that matters: one click, the Defense drill
 The Defense drill tab runs the whole loop in about 4 seconds on one frozen copy of the twin, with synthetic attack traffic. The red team attacks and explains each adaptation; the simulator searches 216 policies while pricing false positives ($4 per good order reviewed, plus the full value of any good order blocked, and never more than 8% of good customers reviewed); then the identical seeded attacks are replayed under the winner, and unseen attacks run under both policies.
@@ -67,10 +69,8 @@ The twin's population is synthetic and seeded, because sandbox accounts don't pr
 ## What's next
 Catching warm-up orders from synthetic identities, sparse attention for millions of nodes, mirroring PayPal transaction history into the twin, and letting the red team retrain the GAT on the attacks it invents.
 
-**Channel3 live products.** With a Channel3 key, the Concierge shops real products from 25,000+ retailers (real titles, prices, photos and retailer links). The mandate guard and the graph risk gate still decide every checkout, and payment is a PayPal sandbox order: we don't buy from the retailer. Without a key it falls back to the demo catalog.
-
 ## Built with
-python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, vis-network, chart.js, channel3
+python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, vis-network, chart.js, channel3, paypal-sandbox, svg, canvas
 
 ## Testing instructions (fill in before submitting)
 1. Live demo: <Render URL>
