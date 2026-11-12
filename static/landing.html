@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel Twin · AI fraud defense for agentic commerce</title>
+<meta name="description" content="Safe AI checkout for every merchant: a digital twin, a graph neural network and AI agents that catch fraud before money moves.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 2 4 6.5v8.2C4 22.3 9.1 28 16 30c6.9-2 12-7.7 12-15.3V6.5Z' fill='%23001A5C' stroke='%234DA3FF' stroke-width='1.6'/><circle cx='16' cy='17' r='3' fill='%23E8F4FF'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--hot:#E8F4FF;--neon:#4DA3FF;--glow:#2F7BFF;--deep:#3D5BFF;--kick:#7FC4FF;--muted:#9DB8E8}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;color:var(--hot);font-family:"Plus Jakarta Sans",system-ui,sans-serif;overflow-x:hidden;
+  background:radial-gradient(ellipse at 55% 40%,#0B2A8A 0%,#04104A 35%,#020725 65%,#01030F 100%) fixed;background-color:#01030F}
+.fog{position:fixed;inset:-10%;pointer-events:none;z-index:0}
+.fog i{position:absolute;border-radius:50%;mix-blend-mode:screen;will-change:transform}
+.fog i:nth-child(1){width:50vw;height:40vw;left:-10vw;top:-5vh;background:radial-gradient(circle,rgba(30,60,255,.45),transparent 70%);filter:blur(100px);animation:fa 60s ease-in-out infinite alternate}
+.fog i:nth-child(2){width:45vw;height:38vw;right:-8vw;top:20vh;background:radial-gradient(circle,rgba(47,123,255,.40),transparent 70%);filter:blur(110px);animation:fb 75s ease-in-out infinite alternate}
+.fog i:nth-child(3){width:70vw;height:20vw;left:10vw;bottom:5vh;background:linear-gradient(90deg,transparent,rgba(0,156,222,.30),rgba(61,91,255,.30),transparent);filter:blur(80px);animation:fa 90s ease-in-out infinite alternate-reverse}
+.fog i:nth-child(4){width:35vw;height:35vw;left:35vw;top:35vh;background:radial-gradient(circle,rgba(20,40,200,.35),transparent 70%);filter:blur(100px);animation:fb 66s ease-in-out infinite alternate-reverse}
+@keyframes fa{to{transform:translate(8vw,5vh) scale(1.12)}}@keyframes fb{to{transform:translate(-9vw,-4vh) scale(.9)}}
+.dust{position:fixed;inset:0;opacity:.18;pointer-events:none;z-index:0;background-size:220px 220px;
+  background-image:radial-gradient(1px 1px at 20px 30px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 120px 80px,#cfe8ff 50%,transparent 51%),radial-gradient(1px 1px at 190px 160px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 60px 190px,#cfe8ff 50%,transparent 51%),radial-gradient(1px 1px at 160px 20px,#fff 50%,transparent 51%)}
+.grid{position:absolute;left:-30%;right:-30%;top:58vh;height:42vh;opacity:.10;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(77,163,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(77,163,255,1) 1px,transparent 1px);
+  background-size:56px 56px;transform:perspective(380px) rotateX(62deg);transform-origin:bottom center;
+  -webkit-mask-image:linear-gradient(to top,#000 10%,transparent 95%);mask-image:linear-gradient(to top,#000 10%,transparent 95%)}
+.top{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:22px clamp(16px,4vw,56px)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.01em}
+.brand svg{width:30px;height:30px;filter:drop-shadow(0 0 8px rgba(77,163,255,.8))}
+.event{font-size:12.5px;font-weight:600;letter-spacing:.06em;color:var(--kick);padding:6px 14px;border-radius:999px;border:1px solid rgba(77,163,255,.5);
+  background:rgba(2,6,30,.45);box-shadow:0 0 10px rgba(47,123,255,.35)}
+.hero{position:relative;z-index:1;min-height:calc(100vh - 80px);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:center;gap:clamp(16px,3vw,48px);
+  padding:0 clamp(16px,4vw,56px) 40px;max-width:1440px;margin:0 auto}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.22em;color:var(--kick);text-shadow:0 0 10px rgba(77,163,255,.9)}
+h1{margin:14px 0 18px;font-size:clamp(52px,8vw,118px);line-height:.95;font-weight:800;letter-spacing:-.025em;color:#F4F9FF;
+  text-shadow:0 0 4px #CFEAFF,0 0 16px var(--neon),0 0 40px var(--glow),0 0 90px var(--deep)}
+.lede{margin:0 0 30px;font-size:clamp(17px,1.6vw,22px);line-height:1.5;color:#CFE0FF;max-width:600px}
+.lede b{color:#fff;font-weight:600}
+.cta{display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:999px;font:700 16px "Plus Jakarta Sans",sans-serif;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .2s,background .2s}
+.btn.primary{color:#020725;background:linear-gradient(180deg,#F4F9FF,#BFE3FF);border:0;box-shadow:0 0 0 2px rgba(127,196,255,.9),0 0 22px rgba(77,163,255,.9),0 0 60px rgba(61,91,255,.6)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 0 0 2px #E8F4FF,0 0 30px rgba(77,163,255,1),0 0 80px rgba(61,91,255,.8)}
+.btn.ghost{color:#DCEBFF;background:rgba(2,6,30,.45);border:1.5px solid rgba(77,163,255,.8);box-shadow:0 0 12px rgba(47,123,255,.45),inset 0 0 8px rgba(47,123,255,.2)}
+.btn.ghost:hover{background:rgba(47,123,255,.25)}
+.art{width:100%;max-width:640px;justify-self:end;overflow:visible}
+.art .link{fill:none;stroke:rgba(59,123,255,.55);stroke-width:1.3}
+.art .rlink{fill:none;stroke:rgba(143,211,255,.85);stroke-width:1.8}
+.art .acc{fill:rgba(77,163,255,.12);stroke:#4DA3FF;stroke-width:2.2}
+.art .hot{fill:rgba(159,224,255,.25);stroke:#E8F4FF;stroke-width:2.6}
+.art .dev{fill:none;stroke:#5CE1FF;stroke-width:1.6}
+.art .halo{fill:none;stroke:rgba(77,163,255,.5);stroke-width:1.4;stroke-dasharray:5 7}
+.art .pulse{fill:#E8F4FF}
+.art .shield{animation:breathe 4s ease-in-out infinite}
+@keyframes breathe{50%{filter:drop-shadow(0 0 14px rgba(159,224,255,.9))}}
+.chips{position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:0 16px 46px;max-width:1200px;margin:0 auto}
+.chips span{padding:7px 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:#CFE6FF;background:rgba(2,6,30,.55);
+  border:1px solid rgba(77,163,255,.7);box-shadow:0 0 10px rgba(47,123,255,.45),inset 0 0 8px rgba(47,123,255,.2)}
+.how{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:60px clamp(16px,4vw,56px) 90px}
+.how h2{margin:0 0 6px;font-size:clamp(28px,3vw,40px);text-shadow:0 0 18px rgba(77,163,255,.7)}
+.how p.lead{margin:0 0 28px;color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.step{padding:20px;border-radius:18px;background:rgba(4,12,50,.55);border:1px solid rgba(77,163,255,.45);box-shadow:0 0 18px rgba(47,123,255,.2),inset 0 0 14px rgba(47,123,255,.12);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.step .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1.5px solid #7FC4FF;color:#E8F4FF;font-weight:700;box-shadow:0 0 10px rgba(77,163,255,.7);margin-bottom:12px}
+.step b{display:block;font-size:18px;margin-bottom:6px;letter-spacing:.02em}
+.step span{color:#B8CCF0;font-size:14.5px;line-height:1.5}
+.foot{position:relative;z-index:1;text-align:center;color:#6F86B8;font-size:12.5px;padding:0 16px 40px}
+@media (max-width:900px){.hero{grid-template-columns:1fr;min-height:auto;padding-top:20px}.art{justify-self:center;max-width:460px}.steps{grid-template-columns:1fr 1fr}.event{display:none}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}.btn{width:100%;justify-content:center}}
+@media (prefers-reduced-motion:reduce){.fog i,.art .shield{animation:none}html{scroll-behavior:auto}}
+
+/* ===== wispy smoke: turbulence rasterised once as SVG textures; only transform/opacity animate ===== */
+.smoke{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;animation:smokein 1.6s ease-out .1s forwards;
+  -webkit-mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.85) 40%,rgba(0,0,0,.45) 100%);mask-image:linear-gradient(to top,#000 0%,rgba(0,0,0,.85) 40%,rgba(0,0,0,.45) 100%)}
+@keyframes smokein{to{opacity:1}}
+.smoke .par{position:absolute;inset:0;transform:translate3d(var(--mx,0px),var(--my,0px),0);transition:transform .6s ease-out}
+.smoke .par.p2{transform:translate3d(calc(var(--mx,0px) * -1.6),calc(var(--my,0px) * -1.6),0)}
+.smoke .par.p3{transform:translate3d(calc(var(--mx,0px) * 2.2),calc(var(--my,0px) * 2.2),0)}
+.smoke .layer{position:absolute;left:-30vw;top:-10vh;width:160vw;height:130vh;background-repeat:repeat;mix-blend-mode:screen;will-change:transform}
+.smoke .l1{opacity:.38;background-size:1200px 800px;animation:drift1 60s linear infinite}
+.smoke .l2{opacity:.30;background-size:1000px 700px;animation:drift2 75s linear infinite}
+.smoke .l3{opacity:.26;background-size:1400px 900px;animation:rise 48s linear infinite}
+@keyframes drift1{from{transform:translate3d(0,0,0)}to{transform:translate3d(-1200px,-120px,0)}}
+@keyframes drift2{from{transform:translate3d(-1000px,0,0)}to{transform:translate3d(0,-90px,0)}}
+@keyframes rise{from{transform:translate3d(-200px,0,0)}to{transform:translate3d(200px,-900px,0)}}
+.hero > div:first-child{position:relative}
+.hero > div:first-child::before{content:"";position:absolute;inset:-12% -10% -12% -14%;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at 40% 50%,rgba(1,3,15,.62) 0%,rgba(1,3,15,.35) 45%,transparent 72%)}
+h1{animation:glowon 1.4s ease-out 1.1s both}
+@keyframes glowon{from{text-shadow:none;color:rgba(244,249,255,.35)}to{}}
+@media (prefers-reduced-motion:reduce){.smoke{animation:none;opacity:1}.smoke .layer{animation:none}h1{animation:none}.smoke .par{transition:none}}
+</style>
+</head>
+<body>
+<div class="fog" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="smoke" aria-hidden="true">
+  <div class="par p1"><div class="layer l1"></div></div>
+  <div class="par p2"><div class="layer l2"></div></div>
+  <div class="par p3"><div class="layer l3"></div></div>
+</div>
+<div class="dust" aria-hidden="true"></div>
+<div class="grid" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 6.5v8.2C4 22.3 9.1 28 16 30c6.9-2 12-7.7 12-15.3V6.5Z" fill="none" stroke="#4DA3FF" stroke-width="2"/><circle cx="16" cy="16" r="3" fill="#E8F4FF"/></svg>Sentinel Twin</div>
+  <div class="event">PayPal AI Hackathon 2026</div>
+</header>
+
+<section class="hero">
+  <div>
+    <div class="kicker">AI FRAUD DEFENSE FOR AGENTIC COMMERCE</div>
+    <h1>Sentinel Twin</h1>
+    <p class="lede"><b>Safe AI checkout for every merchant.</b> Attack it. Fix it. Prove it. Before money moves.</p>
+    <div class="cta">
+      <a class="btn primary" id="launch" href="/app">Launch live demo →</a>
+      <a class="btn ghost" href="#how">How it works</a>
+    </div>
+  </div>
+
+  <svg class="art" viewBox="0 0 640 520" role="img" aria-label="Neon illustration: a constellation of accounts with two bright fraud rings inside dashed halos, under a glowing shield">
+    <defs>
+      <filter id="g1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="g2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <radialGradient id="ringglow"><stop offset="0" stop-color="#3D5BFF" stop-opacity=".35"/><stop offset="1" stop-color="#3D5BFF" stop-opacity="0"/></radialGradient>
+    </defs>
+    <circle cx="210" cy="330" r="110" fill="url(#ringglow)"/><circle cx="470" cy="360" r="95" fill="url(#ringglow)"/>
+    <g filter="url(#g1)">
+      <path class="link" d="M60 250 120 300M120 300 90 390M120 300 210 330M300 250 350 300M350 300 470 360M300 250 410 230M410 230 540 260M540 260 580 330M560 440 470 360M90 390 160 450M160 450 260 470M260 470 350 430M350 430 350 300M410 230 380 170M540 260 600 200M60 250 40 170"/>
+      <path class="rlink" id="r1" d="M180 290 240 300 250 360 190 380 160 340 180 290 250 360M240 300 190 380"/>
+      <path class="rlink" id="r2" d="M440 320 500 330 505 390 450 405 440 320 505 390"/>
+    </g>
+    <circle class="halo" cx="210" cy="335" r="78"/><circle class="halo" cx="472" cy="362" r="66" stroke="rgba(140,123,255,.55)"/>
+    <g filter="url(#g1)">
+      <circle class="acc" cx="60" cy="250" r="11"/><circle class="acc" cx="120" cy="300" r="12"/><circle class="acc" cx="90" cy="390" r="10"/><circle class="acc" cx="300" cy="250" r="12"/>
+      <circle class="acc" cx="350" cy="300" r="11"/><circle class="acc" cx="410" cy="230" r="12"/><circle class="acc" cx="540" cy="260" r="11"/><circle class="acc" cx="580" cy="330" r="10"/>
+      <circle class="acc" cx="560" cy="440" r="11"/><circle class="acc" cx="160" cy="450" r="10"/><circle class="acc" cx="260" cy="470" r="11"/><circle class="acc" cx="350" cy="430" r="10"/>
+      <circle class="acc" cx="40" cy="170" r="9"/><circle class="acc" cx="600" cy="200" r="9"/>
+      <path class="dev" d="M380 162l8 8-8 8-8-8zM210 322l8 8-8 8-8-8zM472 352l8 8-8 8-8-8z"/>
+    </g>
+    <g filter="url(#g2)">
+      <circle class="hot" cx="180" cy="290" r="14"/><circle class="hot" cx="240" cy="300" r="15"/><circle class="hot" cx="250" cy="360" r="14"/><circle class="hot" cx="190" cy="380" r="14"/><circle class="hot" cx="160" cy="340" r="13"/>
+      <circle class="hot" cx="440" cy="320" r="14"/><circle class="hot" cx="500" cy="330" r="15"/><circle class="hot" cx="505" cy="390" r="13"/><circle class="hot" cx="450" cy="405" r="14"/>
+    </g>
+    <g fill="#E8F4FF"><circle cx="180" cy="290" r="4"/><circle cx="240" cy="300" r="4"/><circle cx="250" cy="360" r="4"/><circle cx="190" cy="380" r="4"/><circle cx="160" cy="340" r="4"/>
+      <circle cx="440" cy="320" r="4"/><circle cx="500" cy="330" r="4"/><circle cx="505" cy="390" r="4"/><circle cx="450" cy="405" r="4"/></g>
+    <g class="pulses">
+      <circle class="pulse" r="3.2" filter="url(#g1)"><animateMotion dur="5s" repeatCount="indefinite"><mpath href="#r1"/></animateMotion></circle>
+      <circle class="pulse" r="3.2" filter="url(#g1)"><animateMotion dur="5.6s" begin="-2s" repeatCount="indefinite"><mpath href="#r1"/></animateMotion></circle>
+      <circle class="pulse" r="3.2" filter="url(#g1)"><animateMotion dur="4.6s" begin="-1s" repeatCount="indefinite"><mpath href="#r2"/></animateMotion></circle>
+    </g>
+    <g class="shield" transform="translate(275 20)" filter="url(#g2)">
+      <path d="M45 0 0 17v33c0 30 19 53 45 63 26-10 45-33 45-63V17Z" fill="rgba(4,16,74,.6)" stroke="#4DA3FF" stroke-width="4"/>
+      <path d="M45 0 0 17v33c0 30 19 53 45 63 26-10 45-33 45-63V17Z" fill="none" stroke="#E8F4FF" stroke-width="1.4"/>
+      <path d="M26 56l13 13 25-28" fill="none" stroke="#E8F4FF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <path d="M320 140 V230" stroke="rgba(127,196,255,.5)" stroke-width="1.5" stroke-dasharray="3 6" filter="url(#g1)"/>
+  </svg>
+</section>
+
+<div class="chips">
+  <span>PayPal Orders v2 · sandbox</span><span>Gemini agents</span><span>Graph Attention Network</span><span>Adaptive red team</span>
+  <span>What-if policy simulator</span><span>10 Indian languages · voice</span><span>Channel3 · AG Grid</span>
+</div>
+
+<section class="how" id="how">
+  <h2>How it works</h2>
+  <p class="lead">One click runs the whole loop on a frozen copy of the twin. Live traffic is untouched until you approve.</p>
+  <div class="steps">
+    <div class="step"><span class="n">1</span><b>Attack</b><span>An adaptive red team fires synthetic fraud at the twin and changes tactics when it's caught.</span></div>
+    <div class="step"><span class="n">2</span><b>Analyze</b><span>The graph attention network scores every order and shows which shared devices and IPs gave it away.</span></div>
+    <div class="step"><span class="n">3</span><b>Harden</b><span>The simulator searches 216 policies and prices every good customer it would inconvenience.</span></div>
+    <div class="step"><span class="n">4</span><b>Verify</b><span>The same attacks are replayed under the winner, so the fix is proven before any money moves.</span></div>
+  </div>
+</section>
+<div class="foot">Sentinel Twin · open source · payments run in the PayPal sandbox; attack traffic is synthetic and labelled.</div>
+
+<script>
+// Opened as /static/landing.html on a server that predates the /app route? Fall back to "/" (the app) if /app is missing.
+(() => {
+  const a = document.getElementById("launch");
+  fetch("/app", { cache: "no-store" }).then((r) => { if (!r.ok) a.href = "/"; }).catch(() => { a.href = "/"; });
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll(".pulses").forEach((g) => g.remove());
+})();
+
+// Smoke textures: seamless (stitched) fractal noise, coloured in the brand blues, rendered once by the browser as images.
+(() => {
+  const tex = (w, h, freq, oct, seed, rgb, alpha, bias) => {
+    const [r, g, b] = rgb.map((v) => (v / 255).toFixed(3));
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><filter id='f' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>`
+      + `<feTurbulence type='fractalNoise' baseFrequency='${freq}' numOctaves='${oct}' seed='${seed}' stitchTiles='stitch' result='n'/>`
+      + `<feColorMatrix in='n' values='0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  ${alpha} 0 0 0 ${bias}'/></filter>`
+      + `<rect width='100%' height='100%' filter='url(%23f)'/></svg>`;
+    return `url("data:image/svg+xml,${svg.replace(/#/g, "%23").replace(/"/g, "'")}")`;
+  };
+  const set = (sel, v) => { const el = document.querySelector(sel); if (el) el.style.backgroundImage = v; };
+  set(".smoke .l1", tex(1200, 800, "0.008 0.012", 4, 3, [30, 91, 255], 2.4, -0.9));
+  set(".smoke .l2", tex(1000, 700, "0.010 0.009", 3, 11, [61, 139, 255], 2.2, -0.85));
+  set(".smoke .l3", tex(1400, 900, "0.007 0.011", 4, 21, [127, 196, 255], 2.0, -0.9));
+  // subtle mouse parallax: a few pixels, batched to one update per frame
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const root = document.querySelector(".smoke"); let mx = 0, my = 0, queued = false;
+  addEventListener("mousemove", (e) => {
+    mx = (e.clientX / innerWidth - 0.5) * 8; my = (e.clientY / innerHeight - 0.5) * 6;
+    if (queued) return; queued = true;
+    requestAnimationFrame(() => { root.style.setProperty("--mx", mx.toFixed(1) + "px"); root.style.setProperty("--my", my.toFixed(1) + "px"); queued = false; });
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>

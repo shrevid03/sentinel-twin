@@ -63,6 +63,11 @@ threading.Thread(target=_traffic, daemon=True).start()
 
 
 @app.get("/", include_in_schema=False)
+def landing():
+    return FileResponse(STATIC / "landing.html")
+
+
+@app.get("/app", include_in_schema=False)
 def index():
     return FileResponse(STATIC / "index.html")
 
