@@ -1,8 +1,29 @@
 # Sentinel Twin
 
-**A live digital twin of a PayPal merchant's business, defended by a graph attention network and a team of AI agents that shop, investigate and attack it, in 10 Indian languages, by chat or voice.**
+**An AI commerce system that detects a potential attack, explains the risk, tests its defenses against evolving threats, and stops unsafe transactions before real money moves, on PayPal.**
 
-Built for the PayPal AI Hackathon 2026. Targets: Best Use of Agentic Commerce, Best Use of PayPal + AI, Most Creative, plus the AG Grid, Render, Postman and APIMatic sponsor tracks.
+An AI shopping agent pays with PayPal. A digital twin of the merchant's business checks every order with a graph attention network. An adaptive red team attacks a safe copy of the twin to find weaknesses, and a what-if simulator measures each fix, including its cost to good customers, before it goes live. By chat or voice, in 10 Indian languages.
+
+Built for the PayPal AI Hackathon 2026. Targets: Best Use of PayPal + AI, Most Creative, Best Use of Agentic Commerce and Best Demo Delivery.
+
+## The result, in one run
+
+| | Baseline policy | Hardened policy (found by the red team, measured by the simulator) |
+|---|---|---|
+| Fraud missed (458 replayed orders incl. 58 attack orders) | $2,513 | $969 |
+| Catch rate (by value) | 94.3% | 97.8% |
+| Good customers blocked or sent to review | 0 | 0 |
+| Quiet $250 account takeover | approved | stopped (review) |
+| Synthetic identity $250 bust-out | approved | stopped (review); small warm-up orders still pass |
+
+From a real run on 12 Nov 2026 on the synthetic, seeded twin. Numbers vary slightly between runs.
+
+## Safety guarantees (enforced in code, covered by `tests/test_safety.py`)
+
+* The spending mandate and risk gate run in code, never in the prompt. A prompt-injected agent cannot buy blocked gift cards.
+* Only an **approve** decision creates a PayPal order. **Review** and **block** never do.
+* A capture happens **at most once**: repeated requests never charge again or double-count spend. The mandate is **re-checked at capture time**, and only agent-created orders can be captured.
+* Only **signature-verified** PayPal webhooks can change state. (`ALLOW_UNVERIFIED_WEBHOOKS=1` is a local testing switch that works only in demo mode, without PayPal keys.)
 
 ---
 
@@ -127,13 +148,14 @@ pytest -q
 * `test_gradients_match_finite_differences`: every GAT gradient matches numerical differentiation.
 * `test_twin_trains_and_detects_rings`: the GAT reaches a test AUC above 0.85 on held-out accounts.
 * `test_openai_compatible_agent_checks_out`: the Gemini/Groq/Ollama tool loop drives a real checkout end to end (mocked model).
+* `tests/test_safety.py` (6 tests): review and block decisions never create a PayPal order; repeat captures charge once and count spend once; the mandate is re-checked at capture; unknown orders can't be captured; unverified webhooks change nothing.
 
 ## A 3-minute tour
 
 1. **Command center**: the twin graph lights up fraud rings in red. Click a node to see the attention weights behind its score.
 2. **Concierge**: pick Hindi, tap the mic, say *"मेरी माँ के लिए दिवाली का तोहफ़ा 40 डॉलर से कम में खरीदो"*. The agent reads the mandate, searches, checks the twin, creates a PayPal order, and you approve it with PayPal.
-3. **Red team**: *Launch adaptive campaign*. Watch it find that low-and-slow synthetic identities slip through.
-4. **What-if**: test the hardened policy against that attack traffic, then apply it.
+3. **Red team**: *Launch adaptive campaign*. Watch it find that a quiet account takeover and low-and-slow synthetic identities slip through.
+4. **The defining moment**: fire `account_takeover` by hand (amount 250, foreign false). It is approved. In **What-if**, run the hardened policy and read fraud missed and good customers affected, then *Apply to live policy*. Fire the same attack again: it is stopped before any payment starts.
 5. **Investigator**: *Investigate riskiest*. It freezes the ring and files a case report.
 
 ## Project layout

@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
 from . import integrations  # noqa: E402
-from .agents import LANGS, Team  # noqa: E402
+from .agents import LANGS, CaptureRefused, Team  # noqa: E402
 from .paypal import PayPal, PayPalError  # noqa: E402
 from .redteam import ATTACKS, run_attack  # noqa: E402
 from .twin import Twin, _public  # noqa: E402
@@ -252,9 +252,12 @@ def set_mandate(body: MandateIn):
 def capture(order_id: str):
     try:
         res = team.capture(order_id)
+    except CaptureRefused as e:
+        raise HTTPException(e.status, e.detail)
     except PayPalError as e:
         raise HTTPException(502, str(e))
-    return {"status": res.get("status"), "id": res.get("id"), "mode": paypal.mode}
+    return {"status": res.get("status"), "id": res.get("id"), "mode": paypal.mode,
+            "duplicate": bool(res.get("duplicate"))}
 
 
 @app.get("/api/paypal/calls")
@@ -273,7 +276,13 @@ async def webhook(request: Request, bg: BackgroundTasks):
     verified = paypal.verify_webhook({k.lower(): v for k, v in request.headers.items()}, event)
     etype = event.get("event_type", "UNKNOWN")
     res = event.get("resource", {}) or {}
-    twin._event("paypal", f"Webhook {etype} ({'verified' if verified else 'unverified'})",
+    # Only a PayPal-verified webhook may change state. ALLOW_UNVERIFIED_WEBHOOKS=1 is a local testing switch
+    # that works only in demo mode (no PayPal keys), so a live deployment can never be driven by forged events.
+    trusted = verified or (not paypal.live and os.getenv("ALLOW_UNVERIFIED_WEBHOOKS", "0") == "1")
+    if not trusted:
+        twin._event("paypal", f"Webhook {etype} ignored: signature not verified", level="warn")
+        return {"received": True, "verified": False, "processed": False}
+    twin._event("paypal", f"Webhook {etype} ({'verified' if verified else 'unverified, demo testing'})",
                 level="bad" if "DISPUTE" in etype else "info")
     if "DISPUTE" in etype:
         # a buyer dispute is ground truth arriving from PayPal: label it and open an investigation
@@ -286,4 +295,4 @@ async def webhook(request: Request, bg: BackgroundTasks):
         for o in twin.orders:
             if o.get("capture_id") == res.get("id"):
                 o["status"] = "refunded"
-    return {"received": True, "verified": verified}
+    return {"received": True, "verified": verified, "processed": True}

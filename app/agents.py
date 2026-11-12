@@ -15,10 +15,19 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import time
 
 from . import catalog
 from .redteam import ATTACKS, run_attack, scorecard
+
+
+class CaptureRefused(Exception):
+    """A capture the server will not perform (unknown order or mandate exceeded)."""
+
+    def __init__(self, status, detail):
+        super().__init__(detail)
+        self.status, self.detail = status, detail
 
 LANGS = {
     "en-IN": "English", "hi-IN": "Hindi", "ta-IN": "Tamil", "te-IN": "Telugu", "bn-IN": "Bengali",
@@ -201,6 +210,7 @@ class Team:
         self.cases: list[dict] = []
         self.redteam_runs: list[dict] = []
         self.checkouts: dict[str, dict] = {}
+        self._capture_lock = threading.Lock()
         self.last_attack_orders: list[dict] = []
         acc = twin.new_account(name="Demo Buyer", country="IN", age_days=900, kyc=True)
         acc.devices.add(twin.new_device())
@@ -268,7 +278,15 @@ class Team:
         score = self.twin.score_order(self.buyer, merchant, total, next(iter(acc.devices)), next(iter(acc.ips)))
         decision = self.twin.decide(score["risk"], total, False)
         if decision == "block":
+            self.twin._event("guard", f"Risk engine blocked agent checkout ${total} (risk {score['risk']:.2f})",
+                             level="bad")
             return {"status": "blocked_by_risk_engine", "risk": score["risk"], "factors": score["factors"]}
+        if decision == "review":
+            # a review decision is not permission to pay: no PayPal order is created until a human clears it
+            self.twin._event("guard", f"Agent checkout ${total} held for manual review (risk {score['risk']:.2f}); "
+                                      "no PayPal order created", level="warn")
+            return {"status": "held_for_review", "total": total, "risk": score["risk"], "factors": score["factors"],
+                    "message": "This order needs a human review before any PayPal payment is started."}
         ref = f"twin-{int(time.time())}"
         order = self.pp.create_order([{"name": c["name"], "price": c["price"], "qty": c["qty"], "sku": c["sku"]}
                                       for c in cart], ref)
@@ -284,17 +302,30 @@ class Team:
                 "message": "The buyer must approve this payment with the PayPal button shown in the chat."}
 
     def capture(self, order_id):
-        res = self.pp.capture_order(order_id)
-        co = self.checkouts.get(order_id)
-        if co and res.get("status") == "COMPLETED":
-            co["status"] = "COMPLETED"
-            self.mandate["spent"] = round(self.mandate["spent"] + co["total"], 2)
-            for o in self.twin.orders:
-                if o["id"] == co["twin_order"]:
-                    o["status"] = "captured"
-                    o["capture_id"] = _capture_id(res)
-            self.twin._event("paypal", f"PayPal capture COMPLETED for {order_id} (${co['total']})", level="ok")
-        return res
+        """Capture an agent-created order exactly once, re-checking the mandate at capture time."""
+        with self._capture_lock:
+            co = self.checkouts.get(order_id)
+            if not co:
+                raise CaptureRefused(404, f"unknown order {order_id}: only agent-created checkouts can be captured")
+            if co.get("status") == "COMPLETED":
+                # idempotent: a repeated request never charges again or double-counts spend
+                return {"id": order_id, "status": "COMPLETED", "duplicate": True}
+            remaining = self.mandate["monthly_budget"] - self.mandate["spent"]
+            if co["total"] > self.mandate["per_order_limit"] or co["total"] > remaining:
+                self.twin._event("guard", f"Capture of {order_id} (${co['total']}) refused: mandate exceeded at "
+                                          "capture time", level="bad")
+                raise CaptureRefused(409, f"capture refused: ${co['total']} exceeds the buyer's mandate "
+                                          f"(remaining ${remaining:.2f})")
+            res = self.pp.capture_order(order_id)
+            if res.get("status") == "COMPLETED":
+                co["status"] = "COMPLETED"
+                self.mandate["spent"] = round(self.mandate["spent"] + co["total"], 2)
+                for o in self.twin.orders:
+                    if o["id"] == co["twin_order"]:
+                        o["status"] = "captured"
+                        o["capture_id"] = _capture_id(res)
+                self.twin._event("paypal", f"PayPal capture COMPLETED for {order_id} (${co['total']})", level="ok")
+            return res
 
     # ============================================================ investigator
     def investigator_tools(self, case):
