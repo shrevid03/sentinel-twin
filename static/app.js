@@ -50,14 +50,16 @@ async function loadStats() {
 
 /* ---------------- graph ---------------- */
 let network, nodesDS, edgesDS;
+const NODE_BASE = { account: "#0070E0", device: "#009CDE", ip: "#8A97A8", merchant: "#003087" };
 const colorFor = (n) => {
-  if (n.status === "frozen") return { background: "#666", border: "#fff" };
-  const r = n.risk || 0;
-  const base = n.type === "account" ? [61, 155, 255] : n.type === "device" ? [155, 140, 255] : [63, 208, 201];
-  const hot = [255, 93, 108];
-  const mix = base.map((c, i) => Math.round(c + (hot[i] - c) * Math.min(1, r * 1.1)));
-  return { background: `rgb(${mix})`, border: r > 0.5 ? "#D93025" : "#1d2a4a" };
+  if (n.status === "frozen") return { background: "#B0B8C4", border: "#5B6B82" };
+  const risky = (n.risk || 0) > 0.5;
+  const c = risky ? "#D93025" : (NODE_BASE[n.type] || "#0070E0");
+  return { background: c, border: risky ? "#B3261E" : "#FFFFFF", highlight: { background: c, border: "#003087" }, hover: { background: c, border: "#003087" } };
 };
+const nodeShadow = (n) => (n.risk || 0) > 0.5 && n.status !== "frozen"
+  ? { enabled: true, color: "rgba(217,48,37,0.55)", size: 16, x: 0, y: 0 } : { enabled: false };
+const EDGE_COLOR = { color: "rgba(0,48,135,0.14)", highlight: "rgba(0,112,224,0.6)", hover: "rgba(0,112,224,0.45)" };
 async function loadGraph(focus) {
   const g = await api("/api/graph" + (focus ? `?focus=${focus}` : ""));
   const nodes = g.nodes.map((n) => ({
@@ -66,14 +68,14 @@ async function loadGraph(focus) {
     size: n.type === "account" ? 9 + 12 * n.risk : 6, color: colorFor(n), font: { color: "#001435", size: 10 }, raw: n,
   }));
   if (!network) {
-    nodesDS = new vis.DataSet(nodes); edgesDS = new vis.DataSet(g.edges.map((e, i) => ({ id: i, ...e, color: { color: "#2a3658" } })));
+    nodesDS = new vis.DataSet(nodes); edgesDS = new vis.DataSet(g.edges.map((e, i) => ({ id: i, ...e, color: EDGE_COLOR })));
     network = new vis.Network($("#graph"), { nodes: nodesDS, edges: edgesDS }, {
       physics: { solver: "forceAtlas2Based", forceAtlas2Based: { gravitationalConstant: -32, springLength: 40 }, stabilization: { iterations: 160 } },
-      interaction: { hover: true, tooltipDelay: 80 }, edges: { width: 0.6, smooth: false },
+      interaction: { hover: true, tooltipDelay: 80 }, edges: { width: 0.7, smooth: false },
     });
     network.on("click", (p) => p.nodes[0] && explain(p.nodes[0]));
   } else {
-    nodesDS.clear(); edgesDS.clear(); nodesDS.add(nodes); edgesDS.add(g.edges.map((e, i) => ({ id: i, ...e, color: { color: "#2a3658" } })));
+    nodesDS.clear(); edgesDS.clear(); nodesDS.add(nodes); edgesDS.add(g.edges.map((e, i) => ({ id: i, ...e, color: EDGE_COLOR })));
   }
 }
 async function explain(id) {
