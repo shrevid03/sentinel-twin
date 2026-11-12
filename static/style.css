@@ -330,3 +330,32 @@ div.vis-tooltip{padding:0!important;border:0!important;background:transparent!im
 @keyframes flowPass{0%{transform:translateX(0);opacity:0}8%{opacity:1}55%{transform:translateX(225px)}90%{opacity:1}100%{transform:translateX(390px);opacity:0}}
 @keyframes flowDefl{0%{transform:translate(0,0);opacity:0}8%{opacity:1}55%{transform:translate(215px,0);opacity:1}100%{transform:translate(170px,var(--dy));opacity:0}}
 @media (prefers-reduced-motion:reduce){.flowsvg .arrow{animation:none;opacity:1}}
+
+/* ===== graph: blue neon window (overrides earlier fog colours) ===== */
+.graphwrap{background:radial-gradient(ellipse at 50% 45%,#02041A 0%,#01031A 55%,#000210 100%);border-color:rgba(77,163,255,.35);
+  box-shadow:0 0 0 1px rgba(47,123,255,.15),0 0 32px rgba(47,123,255,.25),0 12px 40px rgba(0,20,53,.25)}
+.graphwrap .fog i{opacity:.55}
+.graphwrap .fog i:nth-child(1){background:linear-gradient(90deg,transparent,rgba(30,60,255,.35),rgba(47,123,255,.30),transparent)}
+.graphwrap .fog i:nth-child(2){background:linear-gradient(90deg,transparent,rgba(61,91,255,.30),rgba(0,112,224,.30),transparent)}
+.graphwrap .fog i:nth-child(3){background:linear-gradient(90deg,transparent,rgba(0,156,222,.25),transparent)}
+.graphwrap .fog i:nth-child(4){background:radial-gradient(circle,rgba(30,60,255,.35),transparent 70%)}
+.graphwrap .fog i:nth-child(5){background:radial-gradient(circle,rgba(47,91,255,.30),transparent 70%)}
+.graphwrap .fog i:nth-child(6){background:radial-gradient(circle,rgba(20,40,200,.30),transparent 70%)}
+.graphwrap .wisp{opacity:.10}
+.graphwrap::after{content:"";position:absolute;left:-20%;right:-20%;bottom:0;height:38%;z-index:0;pointer-events:none;opacity:.04;
+  background-image:linear-gradient(rgba(77,163,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(77,163,255,1) 1px,transparent 1px);
+  background-size:40px 40px;transform:perspective(300px) rotateX(60deg);transform-origin:bottom center}
+.hud-tl,.ringchip,.hudbtn,.hud-br{background:rgba(2,6,30,.6);border:1px solid rgba(77,163,255,.7);box-shadow:0 0 8px rgba(47,123,255,.45),inset 0 0 6px rgba(47,123,255,.2)}
+.hud-tl b{color:#9FE0FF;text-shadow:0 0 6px #2F7BFF}
+.ringchip{color:#CFE6FF;border-color:rgba(77,163,255,.75)}
+.ringchip b{color:#E8F4FF;text-shadow:0 0 6px #4DA3FF}
+.ringchip i{background:transparent;border:1.5px solid #9FE0FF;box-shadow:0 0 6px #4DA3FF}
+.ringchip:hover{background:rgba(47,123,255,.35);border-color:#9FE0FF;color:#fff}
+.hudbtn{color:#CFE6FF}.hudbtn:hover{background:rgba(47,123,255,.45);border-color:#9FE0FF}
+.hud-br .riskscale{background:linear-gradient(180deg,#E8F4FF,#7FD0FF 35%,#2F7BFF 70%,#0A1A6B);box-shadow:0 0 8px rgba(77,163,255,.6)}
+.gtip{background:rgba(2,6,30,.8);border-color:rgba(77,163,255,.7);box-shadow:0 0 10px rgba(47,123,255,.5)}
+.legend .dot{background:transparent!important;box-shadow:none}
+.legend .dot.acc{border:2px solid #4DA3FF;box-shadow:0 0 6px #2F7BFF}
+.legend .dot.dev{border:1.5px solid #5CE1FF;border-radius:1px;transform:rotate(45deg) scale(.85);box-shadow:0 0 6px #2FB8FF}
+.legend .dot.ip{background:#8AA8FF!important;width:6px;height:6px;box-shadow:0 0 6px #5C7CFF}
+.legend .dot.hot{border:2.5px solid #7FD0FF;background:radial-gradient(circle,#E8F4FF 30%,transparent 35%)!important;box-shadow:0 0 8px #3D5BFF,0 0 3px #9FE0FF}

@@ -56,9 +56,9 @@ let graphMeta = {}, SIZE_K = 1;
 /* ---------- twin graph: "constellation of the twin" ---------- */
 const RISKY = (n) => (n.risk || 0) > 0.5 && n.status !== "frozen";
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const EDGE_COLOR = { color: "rgba(120,190,255,0.32)", highlight: "rgba(180,225,255,1)", hover: "rgba(180,225,255,1)" };
-const EDGE_RISK = { color: "rgba(255,90,110,0.55)", highlight: "rgba(255,140,155,1)", hover: "rgba(255,140,155,1)" };
-let rings = [], ringEdges = [], POS = {}, graphRaw = null, graphFocus = null;
+const EDGE_COLOR = { color: "rgba(59,123,255,0.45)", highlight: "rgba(160,215,255,1)", hover: "rgba(160,215,255,1)" };
+const EDGE_RISK = { color: "rgba(143,211,255,0.8)", highlight: "rgba(232,244,255,1)", hover: "rgba(232,244,255,1)" };
+let ringAccts = [], rings = [], ringEdges = [], POS = {}, graphRaw = null, graphFocus = null;
 
 function adjOf(g) { const a = {}; g.edges.forEach((e) => { (a[e.from] ||= []).push(e.to); (a[e.to] ||= []).push(e.from); }); return a; }
 function findRings(g, byId, adj) {  // risky accounts linked through any shared device / IP
@@ -92,36 +92,35 @@ function sampleGraph(g, target = 90) {  // fewer, bigger nodes: every risky acco
 }
 
 /* custom node painters: glowing pearls, coral orbs, cyan diamonds, steel rings */
-function painter(n) {
+function painter(n) {  // neon-sign tubes: hollow outlines with glow; risk = brightness, never red
   return ({ ctx, x, y, state: { selected, hover }, style }) => {
     const r = style.size * SIZE_K, hot = RISKY(n), frozen = n.status === "frozen";
     return {
       drawNode() {
         ctx.save();
         if (n.type === "account") {
-          const bloom = r * (hot ? 3.2 : 2.4);
-          let g = ctx.createRadialGradient(x, y, 0, x, y, bloom);
-          g.addColorStop(0, frozen ? "rgba(150,160,180,.25)" : hot ? "rgba(255,90,110,.42)" : "rgba(110,193,255,.36)");
-          g.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, bloom, 0, 6.283); ctx.fill();
-          g = ctx.createRadialGradient(x - r * 0.25, y - r * 0.25, 0, x, y, r);
-          if (frozen) { g.addColorStop(0, "#E2E8F0"); g.addColorStop(1, "#6B7A90"); }
-          else if (hot) { g.addColorStop(0, "#FFD1D6"); g.addColorStop(0.55, "#FF5A6E"); g.addColorStop(1, "rgba(255,90,110,.15)"); }
-          else { g.addColorStop(0, "#FFFFFF"); g.addColorStop(0.45, "#6EC1FF"); g.addColorStop(1, "rgba(110,193,255,.12)"); }
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
-          if (frozen) { ctx.setLineDash([3, 3]); ctx.strokeStyle = "#C5CFDD"; ctx.lineWidth = 1.5; ctx.stroke(); }
+          const rr = r * 0.82;
+          ctx.fillStyle = hot ? "rgba(159,224,255,0.22)" : "rgba(77,163,255,0.12)";
+          ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.283); ctx.fill();
+          if (frozen) { ctx.setLineDash([3, 3]); ctx.strokeStyle = "#6B7FA8"; ctx.lineWidth = 1.6 * SIZE_K; ctx.stroke(); }
+          else if (hot) {
+            ctx.shadowColor = "#3D5BFF"; ctx.shadowBlur = 30; ctx.strokeStyle = "#7FD0FF"; ctx.lineWidth = 3 * SIZE_K; ctx.stroke();
+            ctx.shadowColor = "#9FE0FF"; ctx.shadowBlur = 12; ctx.strokeStyle = "#E8F4FF"; ctx.lineWidth = 1.4 * SIZE_K;
+            ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.283); ctx.stroke();
+            ctx.shadowBlur = 8; ctx.fillStyle = "#E8F4FF"; ctx.beginPath(); ctx.arc(x, y, rr * 0.28, 0, 6.283); ctx.fill();
+          } else { ctx.shadowColor = "#2F7BFF"; ctx.shadowBlur = 18; ctx.strokeStyle = "#4DA3FF"; ctx.lineWidth = 2 * SIZE_K; ctx.stroke(); }
         } else if (n.type === "device") {
-          ctx.fillStyle = hot ? "rgba(255,90,110,.25)" : "rgba(79,227,255,.22)"; ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, 6.283); ctx.fill();
-          ctx.fillStyle = hot ? "#FF8796" : "#4FE3FF";
-          ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill();
+          ctx.shadowColor = hot ? "#9FE0FF" : "#2FB8FF"; ctx.shadowBlur = hot ? 14 : 10;
+          ctx.strokeStyle = hot ? "#E8F4FF" : "#5CE1FF"; ctx.lineWidth = (hot ? 1.8 : 1.4) * SIZE_K;
+          ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.stroke();
         } else if (n.type === "ip") {
-          ctx.strokeStyle = hot ? "#FF8796" : "#9FB3D9"; ctx.lineWidth = 1.8;
-          ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, 6.283); ctx.stroke();
+          ctx.shadowColor = "#5C7CFF"; ctx.shadowBlur = 8; ctx.fillStyle = hot ? "#DDE8FF" : "#8AA8FF";
+          ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, 6.283); ctx.fill();
         } else {
-          ctx.fillStyle = "#fff"; ctx.strokeStyle = "#003087"; ctx.lineWidth = 2.5;
-          ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); ctx.stroke();
+          ctx.shadowColor = "#2F7BFF"; ctx.shadowBlur = 16; ctx.strokeStyle = "#E8F4FF"; ctx.lineWidth = 2 * SIZE_K;
+          ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, 6.283); ctx.stroke();
         }
-        if (selected || hover) { ctx.setLineDash([]); ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 1.5; ctx.shadowBlur = 0;
+        if (selected || hover) { ctx.setLineDash([]); ctx.shadowColor = "#9FE0FF"; ctx.shadowBlur = 14; ctx.strokeStyle = "rgba(232,244,255,.95)"; ctx.lineWidth = 1.5 * SIZE_K;
           ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 6.283); ctx.stroke(); }
         ctx.restore();
       },
@@ -137,6 +136,7 @@ const visNode = (n) => ({ id: n.id, title: graphTip(n), raw: n, shape: "custom",
 function buildData(g) {
   const byId = Object.fromEntries(g.nodes.map((n) => [n.id, n])), adj = adjOf(g);
   rings = findRings(g, byId, adj);
+  ringAccts = g.nodes.filter((n) => n.type === "account" && RISKY(n)).map((n) => n.id);
   const inRing = {}; rings.forEach((r) => r.members.forEach((m) => (inRing[m] = r.n)));
   ringEdges = [];
   const edges = g.edges.map((e) => {
@@ -167,8 +167,16 @@ function stretchToPanel() {  // physics gives a round blob; widen it to the pane
 }
 
 let pulseRaf = 0, pulseCv = null, pulseCtx = null;
+const GLOW = (() => {  // pre-rendered soft glow sprite: one drawImage per node instead of a gradient per frame
+  const g = document.createElement("canvas"); g.width = g.height = 128; const x = g.getContext("2d");
+  const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, "rgba(159,224,255,0.30)"); gr.addColorStop(0.5, "rgba(77,140,255,0.12)"); gr.addColorStop(1, "rgba(61,91,255,0)");
+  x.fillStyle = gr; x.fillRect(0, 0, 128, 128); return g;
+})();
+let pulseLast = 0;
 function pulseLoop(now) {  // pulses live on their own overlay canvas, so the graph itself never redraws
   pulseRaf = requestAnimationFrame(pulseLoop);
+  if (now - pulseLast < 30) return; pulseLast = now;  // ~30fps is plenty for slow pulses
   if (document.hidden || !document.querySelector("#tab-command.active") || !ringEdges.length || !network) return;
   const el = $("#graph"), r = el.getBoundingClientRect();
   if (r.bottom < 0 || r.top > innerHeight) return;
@@ -177,7 +185,13 @@ function pulseLoop(now) {  // pulses live on their own overlay canvas, so the gr
   if (pulseCv.width !== Math.round(W * dpr) || pulseCv.height !== Math.round(H * dpr)) { pulseCv.width = Math.round(W * dpr); pulseCv.height = Math.round(H * dpr); }
   const c = pulseCtx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
   const t = now / 5000, sc = network.getScale(), rad = Math.max(1.6, 2.4 * Math.sqrt(sc));
-  c.fillStyle = "rgba(255,160,175,0.6)";
+  const breath = 0.5 + 0.5 * Math.sin(now / 4000 * 6.283);  // slow 4s breathing, no flicker
+  const R = 24 * SIZE_K * sc * 1.6;
+  c.globalAlpha = 0.45 + 0.55 * breath;
+  ringAccts.forEach((id) => { const p = POS[id]; if (!p) return; const d = network.canvasToDOM(p); c.drawImage(GLOW, d.x - R, d.y - R, R * 2, R * 2); });
+  c.globalAlpha = 1;
+  c.fillStyle = "rgba(220,240,255,0.75)";
+  c.fillStyle = "rgba(220,240,255,0.75)";
   ringEdges.forEach((e) => {
     const a = POS[e.from], b = POS[e.to]; if (!a || !b) return;
     const k = (t + e.phase) % 1, d = network.canvasToDOM({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k });
@@ -186,14 +200,19 @@ function pulseLoop(now) {  // pulses live on their own overlay canvas, so the gr
   });
 }
 
-function drawRingMist(ctx) {
+function drawRingMist(ctx) {  // a faint blue halo around each ring (no red anywhere)
+  const maxRisk = Math.max(0, ...rings.map((x) => x.risk));
   rings.forEach((rg) => {
     const ps = rg.accounts.map((id) => POS[id]).filter(Boolean); if (!ps.length) return;
     const cx = ps.reduce((a, p) => a + p.x, 0) / ps.length, cy = ps.reduce((a, p) => a + p.y, 0) / ps.length;
-    const rad = 70 + Math.min(150, Math.max(...ps.map((p) => Math.hypot(p.x - cx, p.y - cy))) * 1.6);
+    const spread = Math.max(...ps.map((p) => Math.hypot(p.x - cx, p.y - cy)));
+    const rad = 70 + Math.min(150, spread * 1.6);
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-    g.addColorStop(0, "rgba(255,90,110,0.20)"); g.addColorStop(0.55, "rgba(255,90,110,0.08)"); g.addColorStop(1, "rgba(255,90,110,0)");
+    g.addColorStop(0, "rgba(61,91,255,0.20)"); g.addColorStop(0.6, "rgba(47,123,255,0.07)"); g.addColorStop(1, "rgba(47,123,255,0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, 6.283); ctx.fill();
+    ctx.save(); ctx.strokeStyle = rg.risk === maxRisk && rg.n === rings.find((x) => x.risk === maxRisk).n ? "rgba(140,123,255,0.45)" : "rgba(77,163,255,0.28)";
+    ctx.lineWidth = 1.2 * SIZE_K; ctx.setLineDash([4 * SIZE_K, 6 * SIZE_K]); ctx.shadowColor = "#2F7BFF"; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(cx, cy, Math.max(30, spread + 22 * SIZE_K), 0, 6.283); ctx.stroke(); ctx.restore();
     rg.c = { x: cx, y: cy, r: rad };
   });
 }
