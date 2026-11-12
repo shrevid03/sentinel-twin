@@ -16,7 +16,7 @@ AI agents are starting to buy things for people. That gives small merchants two 
 - **What-if simulator**: replays twin traffic plus the red team's attacks under a proposed policy before you apply it.
 
 ## How we built it
-FastAPI backend and a no-build single-page front end. The GAT is our own NumPy implementation (2 layers, 4 attention heads, hand-derived backprop, gradient-checked in tests). The agents are Claude tool-use loops over real functions on the twin and the PayPal REST API (OAuth, Orders v2 create/get/capture, Payments v2 refunds, webhook signature verification) plus the PayPal JS SDK buttons. Voice uses the Web Speech API. Tables use AG Grid, deployment uses a Render blueprint, the API ships as a Postman collection and an OpenAPI spec for APIMatic, and events can stream to Elastic and Zapier.
+FastAPI backend and a no-build single-page front end. The GAT is our own NumPy implementation (2 layers, 4 attention heads, hand-derived backprop, gradient-checked in tests). The agents are LLM tool-use loops (free Gemini or Groq, local Ollama, or Claude, all supported) over real functions on the twin and the PayPal REST API (OAuth, Orders v2 create/get/capture, Payments v2 refunds, webhook signature verification) plus the PayPal JS SDK buttons. Voice uses the Web Speech API. Tables use AG Grid, deployment uses a Render blueprint, the API ships as a Postman collection and an OpenAPI spec for APIMatic, and events can stream to Elastic and Zapier.
 
 ## Challenges we ran into
 Keeping guardrails out of the model: the prompt-injection attack proved the shopping agent can be talked into anything, so the mandate and risk gate moved into code. Making the red team genuinely adaptive meant running every attack on a deep copy of the twin so live state is never polluted. Writing GAT backprop by hand needed a finite-difference test to trust it.
@@ -31,7 +31,7 @@ Fraud is a graph problem, and attention weights make graph models explainable en
 Sparse attention for millions of nodes, mirroring PayPal Transaction Search history into the twin, Venmo and Braintree checkout, and letting the red team retrain the GAT on the attacks it invents.
 
 ## Built with
-python, fastapi, numpy, graph-attention-network, claude, anthropic-api, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, elastic, zapier, vis-network, chart.js
+python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, elastic, zapier, vis-network, chart.js
 
 ## Testing instructions (fill in before submitting)
 1. Live demo: <Render URL>

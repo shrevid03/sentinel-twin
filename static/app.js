@@ -231,7 +231,7 @@ async function renderCases() {
     ${c.evidence ? `<ul>${c.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>` : ""}
     ${c.actions?.length ? `<small class="muted">Actions: ${esc(c.actions.join("; "))}</small><br>` : ""}
     ${c.recommended_actions ? `<small class="muted">Recommended: ${esc(c.recommended_actions.join("; "))}</small>` : ""}
-    ${c.narrative && c.brain === "claude" ? `<details><summary class="muted">Investigator narrative</summary>${md(c.narrative)}</details>` : ""}</div>`).join("")
+    ${c.narrative && c.brain !== "demo" ? `<details><summary class="muted">Investigator narrative</summary>${md(c.narrative)}</details>` : ""}</div>`).join("")
     : `<p class="muted">No cases yet. Click Investigate on any account.</p>`;
 }
 
@@ -352,8 +352,9 @@ function refresh() { loadStats(); loadFeed(); }
   CFG = await api("/api/config");
   $("#b-paypal").textContent = CFG.paypal_mode === "sandbox" ? "PayPal sandbox · live" : "PayPal · demo mode";
   $("#b-paypal").className = "badge " + (CFG.paypal_mode === "sandbox" ? "on" : "off");
-  $("#b-brain").textContent = CFG.brain === "claude" ? `Claude · ${CFG.model}` : "AI · demo brain";
-  $("#b-brain").className = "badge " + (CFG.brain === "claude" ? "on" : "off");
+  const BR = { claude: "Claude", gemini: "Gemini", groq: "Groq", ollama: "Ollama (local)" };
+  $("#b-brain").textContent = CFG.brain === "demo" ? "AI · demo brain" : `${BR[CFG.brain] || CFG.brain} · ${CFG.model}`;
+  $("#b-brain").className = "badge " + (CFG.brain === "demo" ? "off" : "on");
   $("#auto").checked = CFG.auto_traffic;
   $("#lang").innerHTML = Object.entries(CFG.languages).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   $("#lang").onchange = setChips; setChips();

@@ -53,11 +53,14 @@ Without sandbox keys the app runs in a clearly labelled **demo mode** that retur
 
 ## AI usage
 
-* **Claude** (Anthropic Messages API, `claude-opus-5-5` by default, adaptive thinking, low effort for snappy turns, server-side fallback enabled): powers the Concierge, Shopping, Investigator and Red Team agents through tool use. The Concierge hands off to the Investigator and Red Team, which run their own tool loops.
+* **LLM agents with tool use**: the Concierge, Shopping, Investigator and Red Team agents run tool-calling loops. The Concierge hands off to the Investigator and Red Team, which run their own loops. Pick any backend:
+  * **Google Gemini** (free key, default `gemini-2.5-flash`) or **Groq** (free key, default `llama-3.3-70b-versatile`) through their OpenAI-compatible APIs,
+  * **Ollama** for a fully local, keyless model (`qwen2.5:7b`),
+  * **Claude** (Anthropic Messages API, `claude-opus-5-5`, adaptive thinking) if you have an Anthropic key.
 * **Graph Attention Network** (own implementation): fraud risk and explanations.
 * **Web Speech API**: speech recognition and synthesis in 10 Indian locales.
 
-Without `ANTHROPIC_API_KEY`, a deterministic **demo brain** drives the same tools, so judges can run everything with zero keys.
+With no AI key at all, a deterministic **demo brain** drives the same tools, so judges can run everything with zero keys and zero cost.
 
 ## Sponsor tools used
 
@@ -98,9 +101,18 @@ With no keys you get demo mode for PayPal and the AI. Everything works and is la
 
 Optional webhooks: in the same app, add a webhook pointing to `https://<your-host>/api/paypal/webhook` for `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED` and `CUSTOMER.DISPUTE.CREATED`, then set `PAYPAL_WEBHOOK_ID`.
 
-### Enable Claude
+### Enable the AI agents (free options)
 
-Set `ANTHROPIC_API_KEY` in `.env`. Optional: `CLAUDE_MODEL` (default `claude-opus-5-5`) and `CLAUDE_EFFORT` (default `low`).
+Set **one** of these in `.env` and restart:
+
+| Option | Cost | How |
+|---|---|---|
+| Google Gemini | free tier | Key from https://aistudio.google.com > Get API key, set `GEMINI_API_KEY` |
+| Groq | free tier | Key from https://console.groq.com/keys, set `GROQ_API_KEY` |
+| Ollama (local) | free, no key | Install Ollama, `ollama pull qwen2.5:7b`, set `LLM_PROVIDER=ollama` |
+| Claude | paid | Set `ANTHROPIC_API_KEY` |
+
+`LLM_MODEL` overrides the default model for the chosen provider. The header badge shows which brain is active.
 
 ### Deploy on Render
 
@@ -114,6 +126,7 @@ pytest -q
 
 * `test_gradients_match_finite_differences`: every GAT gradient matches numerical differentiation.
 * `test_twin_trains_and_detects_rings`: the GAT reaches a test AUC above 0.85 on held-out accounts.
+* `test_openai_compatible_agent_checks_out`: the Gemini/Groq/Ollama tool loop drives a real checkout end to end (mocked model).
 
 ## A 3-minute tour
 

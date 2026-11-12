@@ -1,6 +1,6 @@
 # Demo video script (target 2:45, hard limit under 3:00)
 
-Record at 1440x900 or 1920x1080 in Chrome with the PayPal sandbox and Claude keys set. Use your own voice or no music (no copyrighted music). Rehearse each click once before recording.
+Record at 1440x900 or 1920x1080 in Chrome with the PayPal sandbox keys and a free Gemini key set. Use your own voice or no music (no copyrighted music). Rehearse each click once before recording.
 
 | Time | Screen | Say |
 |---|---|---|
