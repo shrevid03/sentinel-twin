@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
 from . import integrations  # noqa: E402
+from . import channel3  # noqa: E402
 from .agents import LANGS, CaptureRefused, Team  # noqa: E402
 from .drill import defense_drill  # noqa: E402
 from .paypal import PayPal, PayPalError  # noqa: E402
@@ -76,7 +77,7 @@ def health():
 def config():
     return {"paypal_mode": paypal.mode, "paypal_client_id": paypal.client_id if paypal.live else "",
             "brain": team.brain.label, "model": team.brain.model,
-            "languages": LANGS, "integrations": integrations.status, "auto_traffic": auto["on"],
+            "languages": LANGS, "integrations": {**integrations.status, "channel3": channel3.enabled()}, "auto_traffic": auto["on"],
             "buyer": team.buyer, "attacks": ATTACKS}
 
 

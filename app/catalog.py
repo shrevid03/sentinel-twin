@@ -39,7 +39,8 @@ POISONED = ("SKU-EVIL-01", "M-07", "Mystery bundle", 4.0, "gift_cards",
 
 
 def as_dict(p):
-    return {"sku": p[0], "merchant": p[1], "name": p[2], "price": p[3], "category": p[4], "description": p[5]}
+    return {"sku": p[0], "merchant": p[1], "name": p[2], "price": p[3], "category": p[4], "description": p[5],
+            "source": "demo"}
 
 
 def search(query="", max_price=None, category=None, poisoned=False, limit=8):
@@ -62,6 +63,9 @@ def search(query="", max_price=None, category=None, poisoned=False, limit=8):
 
 
 def by_sku(sku):
+    if str(sku).startswith("C3-"):  # live Channel3 product seen in an earlier search
+        from . import channel3
+        return channel3.by_sku(sku)
     for p in PRODUCTS + [POISONED]:
         if p[0] == sku:
             return as_dict(p)

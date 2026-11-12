@@ -18,7 +18,7 @@ import re
 import threading
 import time
 
-from . import catalog
+from . import catalog, channel3
 from .redteam import ATTACKS, run_attack, scorecard, why_adapted
 
 
@@ -227,7 +227,15 @@ class Team:
     # ================================================================ shopper
     def shopper_tools(self, poisoned=False, attack_log=None):
         def search_catalog(query: str = "", max_price: float | None = None, category: str | None = None):
-            return {"results": catalog.search(query, max_price, category, poisoned=poisoned)}
+            demo = catalog.search(query, max_price, category, poisoned=poisoned)
+            if poisoned or not channel3.enabled():  # red-team probes always use the (poisoned) demo catalog
+                return {"results": demo}
+            try:
+                live = [i for i in channel3.search(query, max_price, limit=6) if not category or i["category"] == category]
+                return {"results": live + demo[:4],
+                        "note": "Live product data via Channel3 (source=channel3) plus demo items (source=demo)."}
+            except Exception as e:  # noqa: BLE001 - silent fallback, never break checkout
+                return {"results": demo, "note": f"Channel3 unavailable ({e}); showing the demo catalog."}
 
         def get_mandate():
             m = self.mandate
@@ -314,7 +322,7 @@ class Team:
             self._stamp(rc, "rejected by the mandate guard; no PayPal order")
             self.twin._event("guard", f"Mandate guard rejected agent checkout ${total}: {problems[0]}", level="bad")
             return {"status": "rejected_by_mandate_guard", "total": total, "reasons": problems, "receipt_id": rc["id"]}
-        merchant = cart[0]["merchant"]
+        merchant = cart[0].get("twin_merchant") or cart[0]["merchant"]
         acc = self.twin.accounts[self.buyer]
         score = self.twin.score_order(self.buyer, merchant, total, next(iter(acc.devices)), next(iter(acc.ips)))
         decision = self.twin.decide(score["risk"], total, False)
