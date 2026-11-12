@@ -21,6 +21,10 @@ def test_drill_finds_breach_and_fixes_it():
     assert s["breach_evaded_after_usd"] < s["breach_evaded_before_usd"]
     assert res["chosen"]["legit_review_rate"] <= MAX_LEGIT_REVIEW_RATE
     assert twin.policy == res["after_policy"]
+    # held-out: the same unseen attacks under both policies, on the same frozen twin
+    assert s["fresh_evaded_before_usd"] is not None and s["fresh_evaded_after_usd"] <= s["fresh_evaded_before_usd"]
+    for r in res["verify"]:
+        assert abs(r["blocked_usd"] + r["reviewed_usd"] - r["stopped_usd"]) < 0.05
 
 
 def test_same_seed_replays_identical_attack():

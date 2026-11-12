@@ -75,6 +75,7 @@ code{font-size:11.5px;color:#b9c6e4;word-break:break-word}
 .report{white-space:normal;max-height:360px;overflow:auto}
 .explain li{margin-bottom:8px}
 /* defense drill */
+.tag.synth{border-color:var(--warn);color:var(--warn)}
 button.big{font-size:16px;padding:12px 22px}
 button:disabled{opacity:.45;cursor:not-allowed}
 .drill-step{display:none}.drill-step.show{display:block;animation:rise .35s ease-out}

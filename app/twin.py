@@ -458,7 +458,7 @@ class Twin:
         def run(p):
             res = {"approved": 0, "review": 0, "blocked": 0, "fraud_caught_usd": 0.0, "fraud_missed_usd": 0.0,
                    "good_blocked_usd": 0.0, "good_reviewed": 0, "fraud_total_usd": 0.0,
-                   "good_blocked": 0, "good_total": 0}
+                   "good_blocked": 0, "good_total": 0, "fraud_blocked_usd": 0.0, "fraud_reviewed_usd": 0.0}
             for o in scored:
                 d = self.decide(o["risk"], o["amount"], o.get("new_device", False), p, o.get("spend_ratio", 0))
                 res[{"approve": "approved", "review": "review", "block": "blocked"}[d]] += 1
@@ -466,8 +466,9 @@ class Twin:
                     res["fraud_total_usd"] += o["amount"]
                     if d == "approve":
                         res["fraud_missed_usd"] += o["amount"]
-                    else:
+                    else:  # "caught" = intercepted: blocked or sent to review
                         res["fraud_caught_usd"] += o["amount"]
+                        res["fraud_blocked_usd" if d == "block" else "fraud_reviewed_usd"] += o["amount"]
                 else:
                     res["good_total"] += 1
                     if d == "block":

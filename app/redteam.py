@@ -46,7 +46,8 @@ def _clamp(v, lo, hi, default):
 def _summary(kind, params, orders, notes=""):
     fraud = [o for o in orders if o["fraud"]]
     total = sum(o["amount"] for o in fraud)
-    stopped = sum(o["amount"] for o in fraud if o["decision"] != "approve")
+    stopped = sum(o["amount"] for o in fraud if o["decision"] != "approve")  # intercepted: blocked or reviewed
+    blocked = sum(o["amount"] for o in fraud if o["decision"] == "block")
     return {
         "attack": kind, "params": params, "orders": [
             {"id": o["id"], "account": o["account"], "amount": o["amount"], "decision": o["decision"],
@@ -54,6 +55,7 @@ def _summary(kind, params, orders, notes=""):
              "new_device": o.get("new_device", False), "spend_ratio": o.get("spend_ratio", 0),
              "gat_risk": o.get("gat_risk"), "txn_score": o.get("txn_score"), "attack": kind} for o in orders],
         "fraud_usd": round(total, 2), "stopped_usd": round(stopped, 2), "evaded_usd": round(total - stopped, 2),
+        "blocked_usd": round(blocked, 2), "reviewed_usd": round(stopped - blocked, 2),
         "detection_rate": round(stopped / total, 3) if total else 1.0, "notes": notes,
     }
 

@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function attackRows(rows, round) {
   return rows.map((r) => `<tr class="${r.evaded_usd > 0 ? "breach" : ""}"><td>${esc(r.attack)}</td><td class="muted">${round}</td>
-    <td>${esc(fmtParams(r.params))}</td><td class="n">${money(r.fraud_usd)}</td><td class="n ev">${money(r.evaded_usd)}</td>
+    <td>${esc(fmtParams(r.params))}</td><td class="n">${money(r.fraud_usd)}</td><td class="n">${money(r.blocked_usd)} / ${money(r.reviewed_usd)}</td><td class="n ev">${money(r.evaded_usd)}</td>
     <td class="n">${Math.round((r.detection_rate || 0) * 100)}%</td></tr>`).join("");
 }
 
@@ -23,17 +23,17 @@ async function runDrill() {
     const d = drillRes = await api("/api/drill", { seed: 7 });
     const s = d.summary;
 
-    $("#d-attacks").innerHTML = `<table class="dtable"><tr><th>Attack</th><th>Round</th><th>Params</th><th class="n">Attempted</th><th class="n">Got through</th><th class="n">Detected</th></tr>
+    $("#d-attacks").innerHTML = `<table class="dtable"><tr><th>Attack</th><th>Round</th><th>Params</th><th class="n">Attempted</th><th class="n">Blocked / reviewed</th><th class="n">Got through</th><th class="n">Intercepted</th></tr>
       ${attackRows(d.probes, "probe")}${attackRows(d.adapted, "adapted")}</table>`;
     $("#ds-1").classList.add("show");
     await sleep(600);
 
     const searchLine = (d.log.find((l) => l.step === "search") || {}).text || "";
     $("#d-search").textContent = searchLine.charAt(0).toUpperCase() + searchLine.slice(1) +
-      `. Score = fraud $ caught minus false-positive cost ($${d.review_cost_usd} per good order reviewed, plus the full value of good orders blocked).`;
+      `. Score = fraud $ intercepted (blocked or sent to review) minus false-positive cost ($${d.review_cost_usd} per good order reviewed, plus the full value of good orders blocked).`;
     const base = d.before_policy;
     const rows = [{ policy: base, ...d.baseline, today: true }, ...d.top_candidates];
-    $("#d-cands").innerHTML = `<table class="dtable"><tr><th>Policy (changed knobs)</th><th class="n">Catch rate</th><th class="n">Good orders reviewed</th><th class="n">FP cost</th><th class="n">Net benefit</th></tr>
+    $("#d-cands").innerHTML = `<table class="dtable"><tr><th>Policy (changed knobs)</th><th class="n">Intercept rate</th><th class="n">Good orders reviewed</th><th class="n">FP cost</th><th class="n">Net benefit</th></tr>
       ${rows.map((c, i) => {
         const chosen = !c.today && i === 1 && d.chosen;
         return `<tr class="${chosen ? "chosen" : ""}"><td>${c.today ? "<b>Today's policy</b>" : esc(changed(c.policy, base))}${chosen ? ' <span class="tag">chosen</span>' : ""}</td>
@@ -49,7 +49,7 @@ async function runDrill() {
           return `<tr><td>${esc(b.attack)}</td><td>${esc(fmtParams(b.params))}</td><td class="n bad">${money(b.evaded_usd)}</td>
             <td class="n ${v.evaded_usd > 0 ? "bad" : "ok"}">${money(v.evaded_usd)}</td></tr>`;
         }).join("")}</table>`;
-      $("#d-fresh").textContent = `Held-out check (fresh random seeds the policy was never tuned on): ${money(s.fresh_evaded_after_usd)} of ${money(s.fresh_attempted_usd)} got through.`;
+      $("#d-fresh").textContent = `After the fix, intercepted fraud splits into ${money(s.breach_blocked_after_usd)} blocked and ${money(s.breach_reviewed_after_usd)} sent to review. Unseen attacks (fresh seeds, never tuned on, same frozen twin): ${money(s.fresh_evaded_before_usd)} got through under today's policy, ${money(s.fresh_evaded_after_usd)} under the hardened one, of ${money(s.fresh_attempted_usd)} attempted.`;
     } else {
       $("#d-verify").innerHTML = `<p class="muted">No policy beat today's once false positives were priced in, so there is nothing to replay.</p>`;
       $("#d-fresh").textContent = "";
@@ -61,7 +61,8 @@ async function runDrill() {
     const after = (v, f) => (d.chosen ? f(v) : null);
     $("#d-kpis").innerHTML = [
       kpi(`Attack $ that got through<small>same seeded attacks</small>`, arrow(money(s.breach_evaded_before_usd), after(s.breach_evaded_after_usd, money)), "ok"),
-      kpi(`Catch rate<small>replayed traffic plus attacks</small>`, arrow(pct(s.catch_rate_before), after(s.catch_rate_after, pct)), "ok"),
+      kpi(`Unseen attacks that got through<small>fresh seeds, never tuned on</small>`, arrow(money(s.fresh_evaded_before_usd), after(s.fresh_evaded_after_usd, money)), "ok"),
+      kpi(`Intercept rate<small>blocked or sent to review · replayed traffic plus attacks</small>`, arrow(pct(s.catch_rate_before), after(s.catch_rate_after, pct)), "ok"),
       kpi(`Good customers sent to review<small>of ${s.legit_orders} good orders · blocked ${money(s.legit_blocked_before_usd)} → ${money(s.legit_blocked_after_usd)}</small>`,
         arrow(s.legit_reviewed_before, s.legit_reviewed_after), "warn"),
       kpi(`False-positive cost<small>$${d.review_cost_usd} per review plus blocked value</small>`, arrow(money(s.fp_cost_before_usd), after(s.fp_cost_after_usd, money)), "warn"),

@@ -256,9 +256,9 @@ function addResults(results, replace) {
   if (!rtGrid) {
     rtGrid = agGrid.createGrid($("#rt-grid"), { rowData: rows, columnDefs: [
       { field: "attack" }, { field: "params", flex: 1 }, { field: "fraud", valueFormatter: (p) => money(p.value), width: 100 },
-      { field: "stopped", valueFormatter: (p) => money(p.value), width: 100 },
+      { field: "stopped", headerName: "Intercepted", headerTooltip: "blocked or sent to review", valueFormatter: (p) => money(p.value), width: 110 },
       { field: "evaded", valueFormatter: (p) => money(p.value), width: 100, cellStyle: (p) => ({ color: p.value > 0 ? "#ff5d6c" : "#2ecc8f" }) },
-      { field: "detection", width: 105, valueFormatter: (p) => Math.round(p.value * 100) + "%" }, { field: "notes", flex: 1 }],
+      { field: "detection", headerName: "Intercept %", width: 110, valueFormatter: (p) => Math.round(p.value * 100) + "%" }, { field: "notes", flex: 1 }],
       defaultColDef: { resizable: true, sortable: true } });
   } else if (replace) rtGrid.setGridOption("rowData", rows);
   else rtGrid.applyTransaction({ add: rows, addIndex: 0 });
@@ -266,7 +266,7 @@ function addResults(results, replace) {
 function renderRun(run, trace) {
   const s = run.scorecard;
   $("#rt-score").innerHTML = [kpi("attacks launched", s.attacks_run), kpi("fraud attempted", money(s.fraud_attempted_usd)),
-    kpi("stopped", money(s.stopped_usd), "ok"), kpi("got through", money(s.evaded_usd), "bad"),
+    kpi("intercepted (blocked or review)", money(s.stopped_usd), "ok"), kpi("got through", money(s.evaded_usd), "bad"),
     kpi("resilience", Math.round(s.resilience * 100) + "%", s.resilience > 0.9 ? "ok" : "warn"),
     kpi("weakest spot", (s.weakest[0]?.attack || "–").replace(/_/g, " "), "bad")].join("");
   $("#rt-report").classList.remove("muted"); $("#rt-report").innerHTML = md(run.report);
@@ -299,13 +299,13 @@ const getPolicy = () => Object.fromEntries(POLICY_FIELDS.map(([k]) => [k, +$("#p
 async function runWhatIf() {
   await initPolicy();
   const r = await api("/api/whatif?include_redteam=" + $("#wi-rt").checked, getPolicy());
-  const keys = [["fraud_caught_usd", "Fraud stopped $"], ["fraud_missed_usd", "Fraud missed $"], ["good_blocked_usd", "Good orders blocked $"]];
+  const keys = [["fraud_blocked_usd", "Fraud blocked $"], ["fraud_reviewed_usd", "Fraud sent to review $"], ["fraud_missed_usd", "Fraud missed $"], ["good_blocked_usd", "Good orders blocked $"]];
   const data = { labels: keys.map((k) => k[1]), datasets: [
     { label: "Current policy", data: keys.map((k) => r.current[k[0]]), backgroundColor: "#4b5878" },
     { label: "Proposed policy", data: keys.map((k) => r.proposed[k[0]]), backgroundColor: "#3d9bff" }] };
   if (wiChart) { wiChart.data = data; wiChart.update(); } else wiChart = new Chart($("#wi-chart"), { type: "bar", data,
     options: { plugins: { legend: { labels: { color: "#cdd6ee" } } }, scales: { x: { ticks: { color: "#93a0bd" } }, y: { ticks: { color: "#93a0bd" }, grid: { color: "#24304f" } } } } });
-  $("#wi-kpis").innerHTML = [kpi("catch rate now", Math.round(r.current.catch_rate * 100) + "%"), kpi("catch rate proposed", Math.round(r.proposed.catch_rate * 100) + "%", "ok"),
+  $("#wi-kpis").innerHTML = [kpi("intercept rate now", Math.round(r.current.catch_rate * 100) + "%"), kpi("intercept rate proposed", Math.round(r.proposed.catch_rate * 100) + "%", "ok"),
     kpi("good orders to review", `${r.current.good_reviewed} → ${r.proposed.good_reviewed}`, "warn"), kpi("orders replayed", r.orders_replayed)].join("");
   $("#wi-note").textContent = `Replayed ${r.orders_replayed} orders, including ${r.attack_orders} red-team attack orders.`;
 }
@@ -324,8 +324,10 @@ async function loadLedger() {
       { field: "paypal_order_id", headerName: "PayPal order" }, { field: "factors", flex: 1, minWidth: 260 }],
     defaultColDef: { sortable: true, filter: true, resizable: true } });
   else ordGrid.setGridOption("rowData", orders);
-  const coRows = cos.map((c) => ({ ...c, items: c.cart.map((x) => x.name).join(", ") }));
-  if (!coGrid) coGrid = agGrid.createGrid($("#co-grid"), { rowData: coRows, columnDefs: [{ field: "paypal_order_id" }, { field: "total", width: 90 }, { field: "status", width: 120 }, { field: "risk", width: 80 }, { field: "items", flex: 1 }] });
+  const coRows = cos.map((c) => ({ ...c, items: c.cart.map((x) => x.name).join(", "),
+    data: String(c.paypal_order_id).startsWith("DEMO-") ? "Demo mode" : "Real PayPal sandbox" }));
+  if (!coGrid) coGrid = agGrid.createGrid($("#co-grid"), { rowData: coRows, columnDefs: [{ field: "paypal_order_id" },
+    { field: "data", headerName: "Source", width: 150, cellStyle: (p) => ({ color: p.value === "Real PayPal sandbox" ? "#2ecc8f" : "#ffb547", fontWeight: 600 }) }, { field: "total", width: 90 }, { field: "status", width: 120 }, { field: "risk", width: 80 }, { field: "items", flex: 1 }] });
   else coGrid.setGridOption("rowData", coRows);
   if (!apiGrid) apiGrid = agGrid.createGrid($("#api-grid"), { rowData: calls, columnDefs: [{ field: "t", width: 90 }, { field: "method", width: 85 }, { field: "path", flex: 1 }, { field: "status", width: 85 }, { field: "mode", width: 95 }] });
   else apiGrid.setGridOption("rowData", calls);

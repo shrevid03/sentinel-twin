@@ -1,4 +1,5 @@
-"""Defense drill: the adaptive red team finds a gap, the what-if simulator picks a safer policy,
+"""Defense drill (policy hardening on synthetic attack traffic): the adaptive red team finds a gap, the what-if
+simulator picks a safer decision policy (the GAT itself is not retrained),
 and the *same* seeded attack is replayed to prove it is now stopped.
 
 Everything runs on one frozen fork of the twin, so the before and after numbers compare like with like,
@@ -38,7 +39,7 @@ GRID = {
 
 def _slim(r):
     return {k: r.get(k) for k in ("attack", "params", "seed", "fraud_usd", "stopped_usd", "evaded_usd",
-                                  "detection_rate")} | {"orders": r.get("orders", [])}
+                                  "blocked_usd", "reviewed_usd", "detection_rate")} | {"orders": r.get("orders", [])}
 
 
 def _cost(m):
@@ -99,15 +100,17 @@ def defense_drill(twin, seed=7, apply=False, log=None):
                   f"{MAX_LEGIT_REVIEW_RATE:.0%}")
 
     # ---- 3. replay the identical breaching attacks under the chosen policy, plus fresh variants
-    verify, fresh = [], []
+    verify, fresh, fresh_before = [], [], []
     if best:
         hardened = base.fork()
         hardened.policy = dict(best["policy"])
         for r in breaches:
             verify.append(run_attack(hardened, r["attack"], r["params"], seed=r["seed"]))
         # held-out check: same playbooks, new random draws the policy was never tuned on
+        # ...run under BOTH policies on the same frozen base, so the held-out comparison is like for like
         for i, r in enumerate(breaches):
             fresh.append(run_attack(hardened, r["attack"], r["params"], seed=seed + 1000 + i))
+            fresh_before.append(run_attack(base, r["attack"], r["params"], seed=seed + 1000 + i))
         say("verify", f"same attacks replayed: ${sum(v['evaded_usd'] for v in verify):,.0f} got through "
                       f"(was ${sum(b['evaded_usd'] for b in breaches):,.0f})")
 
@@ -137,11 +140,15 @@ def defense_drill(twin, seed=7, apply=False, log=None):
         "top_candidates": [{k: c[k] for k in ("policy", "catch_rate", "fraud_caught_usd", "good_reviewed",
                                                "good_blocked_usd", "false_positive_cost_usd", "net_benefit_usd",
                                                "legit_review_rate")} for c in ok[:6]],
-        "verify": [_slim(r) for r in verify], "fresh": [_slim(r) for r in fresh], "compare": compare,
+        "verify": [_slim(r) for r in verify], "fresh": [_slim(r) for r in fresh],
+        "fresh_before": [_slim(r) for r in fresh_before], "compare": compare,
         "summary": {
             "breach_evaded_before_usd": tot(breaches, "evaded_usd"),
             "breach_evaded_after_usd": tot(verify, "evaded_usd") if best else None,
+            "fresh_evaded_before_usd": tot(fresh_before, "evaded_usd") if best else None,
             "fresh_evaded_after_usd": tot(fresh, "evaded_usd") if best else None,
+            "breach_blocked_after_usd": tot(verify, "blocked_usd") if best else None,
+            "breach_reviewed_after_usd": tot(verify, "reviewed_usd") if best else None,
             "fresh_attempted_usd": tot(fresh, "fraud_usd") if best else None,
             "catch_rate_before": baseline["catch_rate"], "catch_rate_after": best["catch_rate"] if best else None,
             "fp_cost_before_usd": baseline["false_positive_cost_usd"],
