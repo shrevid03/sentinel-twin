@@ -1,6 +1,7 @@
 """Sentinel Twin API server (FastAPI). Run: uvicorn app.main:app --reload"""
 from __future__ import annotations
 
+import hmac
 import os
 import threading
 import time
@@ -10,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request  # noqa: E402
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
@@ -29,6 +30,17 @@ twin.on_event = integrations.publish
 twin.train(epochs=int(os.getenv("GAT_EPOCHS", "120")))
 paypal = PayPal()
 team = Team(twin, paypal)
+
+
+def require_admin(x_admin_token: str | None = Header(default=None)):
+    """If ADMIN_TOKEN is set (public deploys), admin actions need the X-Admin-Token header. Unset = open (local)."""
+    tok = os.getenv("ADMIN_TOKEN", "").strip()
+    if tok and not hmac.compare_digest((x_admin_token or "").encode(), tok.encode()):
+        raise HTTPException(401, "admin token required: send the X-Admin-Token header")
+
+
+ADMIN = [Depends(require_admin)]
+_reset_lock = threading.Lock()
 auto = {"on": os.getenv("AUTO_TRAFFIC", "1") == "1", "n": 3}
 
 app = FastAPI(title="Sentinel Twin API", version="1.0.0",
@@ -127,7 +139,7 @@ def model():
     return twin.metrics
 
 
-@app.post("/api/model/retrain")
+@app.post("/api/model/retrain", dependencies=ADMIN)
 def retrain():
     m = twin.train(epochs=int(os.getenv("GAT_EPOCHS", "120")))
     twin._event("model", f"GAT retrained on {m['graph']['nodes']} nodes: test AUC {m['test_auc']}", level="ok")
@@ -214,8 +226,10 @@ LAST_DRILL: dict = {}
 
 
 @app.post("/api/drill")
-def drill(body: DrillIn):
+def drill(body: DrillIn, x_admin_token: str | None = Header(default=None)):
     """One-click defense drill: attack, search for a safer policy, replay the same attack, optionally apply."""
+    if body.apply:  # applying changes the live policy: an admin action
+        require_admin(x_admin_token)
     res = defense_drill(twin, seed=body.seed, apply=body.apply)
     team.last_attack_orders = [o for r in res["probes"] + res["adapted"] for o in r["orders"]]
     LAST_DRILL.clear()
@@ -227,14 +241,30 @@ def drill(body: DrillIn):
 def compare_get():
     """Rules only vs GAT + rules vs GAT + rules hardened, on the latest drill's orders (runs a drill if none yet)."""
     if not LAST_DRILL:
-        drill(DrillIn())
+        drill(DrillIn(), None)
     return LAST_DRILL["compare"]
 
 
 @app.post("/api/compare")
 def compare_post(body: DrillIn):
     """Run a fresh drill (never applied) and return its rules-vs-graph comparison."""
-    return drill(DrillIn(seed=body.seed, apply=False))["compare"]
+    return drill(DrillIn(seed=body.seed, apply=False), None)["compare"]
+
+
+@app.post("/api/reset", dependencies=ADMIN)
+def reset():
+    """Rebuild the demo from TWIN_SEED: fresh twin and GAT, default policy, empty mandate spend, holds,
+    checkouts, receipts, proposed actions, audit trail, cases and red-team runs."""
+    global twin, team
+    with _reset_lock:
+        t = Twin(seed=int(os.getenv("TWIN_SEED", "3")))
+        t.on_event = integrations.publish
+        t.train(epochs=int(os.getenv("GAT_EPOCHS", "120")))
+        paypal.calls.clear()
+        twin, team = t, Team(t, paypal)
+        LAST_DRILL.clear()
+        twin._event("system", "Demo reset: fresh twin, default policy, empty queues", level="info")
+    return {"ok": True, "seed": int(os.getenv("TWIN_SEED", "3")), "policy": twin.policy}
 
 
 @app.get("/api/redteam/runs")
@@ -255,7 +285,7 @@ def whatif(body: PolicyIn, include_redteam: bool = True):
     return twin.what_if(body.model_dump(), extra_orders=team.last_attack_orders if include_redteam else None)
 
 
-@app.post("/api/policy")
+@app.post("/api/policy", dependencies=ADMIN)
 def set_policy(body: PolicyIn):
     twin.policy = body.model_dump()
     twin._event("policy", f"Policy updated: review>={body.review_threshold}, block>={body.block_threshold}, "
@@ -315,22 +345,22 @@ def _review(fn, item_id, *args):
         raise HTTPException(e.status, e.detail)
 
 
-@app.post("/api/actions/{action_id}/approve")
+@app.post("/api/actions/{action_id}/approve", dependencies=ADMIN)
 def approve_action(action_id: str, body: ReviewIn):
     return _review(team.decide_action, action_id, True, body.reviewer, body.note)
 
 
-@app.post("/api/actions/{action_id}/reject")
+@app.post("/api/actions/{action_id}/reject", dependencies=ADMIN)
 def reject_action(action_id: str, body: ReviewIn):
     return _review(team.decide_action, action_id, False, body.reviewer, body.note)
 
 
-@app.post("/api/holds/{hold_id}/release")
+@app.post("/api/holds/{hold_id}/release", dependencies=ADMIN)
 def release_hold(hold_id: str, body: ReviewIn):
     return _review(team.decide_hold, hold_id, True, body.reviewer, body.note)
 
 
-@app.post("/api/holds/{hold_id}/reject")
+@app.post("/api/holds/{hold_id}/reject", dependencies=ADMIN)
 def reject_hold(hold_id: str, body: ReviewIn):
     return _review(team.decide_hold, hold_id, False, body.reviewer, body.note)
 

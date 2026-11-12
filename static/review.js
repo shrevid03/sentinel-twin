@@ -41,3 +41,11 @@ document.addEventListener("click", async (e) => {
 
 document.querySelectorAll('#tabs button[data-tab="investigator"]').forEach((b) => b.addEventListener("click", loadReview));
 setInterval(() => document.querySelector("#tab-investigator.active") && loadReview(), 5000);
+
+$("#btn-reset").onclick = async () => {
+  if (!confirm("Reset the demo? This rebuilds the twin from its seed (about 10 seconds) and clears checkouts, holds, proposed actions, receipts and the policy.")) return;
+  const b = $("#btn-reset");
+  b.disabled = true; b.textContent = "Resetting…";
+  try { await api("/api/reset", {}); location.reload(); }
+  catch (e) { alert("Reset failed: " + e.message); b.disabled = false; b.textContent = "Reset demo"; }
+};

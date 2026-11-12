@@ -1,9 +1,14 @@
 /* Sentinel Twin front end: plain JS, no build step. */
 const $ = (s) => document.querySelector(s);
-const api = async (path, body) => {
-  const r = await fetch(path, body === undefined ? {} : {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-  });
+const adminToken = () => { try { return sessionStorage.getItem("adminToken") || ""; } catch { return ""; } };
+const api = async (path, body, retried) => {
+  const headers = { "Content-Type": "application/json" };
+  if (adminToken()) headers["X-Admin-Token"] = adminToken();
+  const r = await fetch(path, body === undefined ? { headers } : { method: "POST", headers, body: JSON.stringify(body) });
+  if (r.status === 401 && !retried) {  // public deploy: admin actions need the token
+    const t = prompt("This action needs the admin token:");
+    if (t) { try { sessionStorage.setItem("adminToken", t); } catch {} return api(path, body, true); }
+  }
   if (!r.ok) throw new Error((await r.text()).slice(0, 300));
   return r.json();
 };
