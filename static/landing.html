@@ -134,6 +134,36 @@ h1{animation:glowon 1.4s ease-out 1.1s both}
 .band,.edfoot{position:relative;z-index:1}
 html,body{overflow-x:clip}
 .grid{position:fixed;top:auto;bottom:0}
+
+/* ===== landing: gentle motion on images ===== */
+.media{position:relative;animation:floaty 9s ease-in-out infinite}
+.ed .row:nth-child(2n) .media{animation-duration:11s;animation-delay:-3s}
+@keyframes floaty{50%{transform:translateY(-7px)}}
+.browser{position:relative;transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .25s ease-out}
+.browser::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.38) 50%,transparent 65%);transform:translateX(-120%);animation:sheen 6s ease-in-out infinite}
+@keyframes sheen{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.ed .row{opacity:0;transform:translateY(46px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+.ed .row.in{opacity:1;transform:none}
+.media.photo img{animation:kenburns 26s ease-in-out infinite alternate;transform-origin:60% 40%}
+@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.12) translate(-1.5%,-1%)}}
+.band{isolation:isolate;background:linear-gradient(180deg,rgba(1,3,15,.55) 0%,rgba(2,8,40,.72) 55%,rgba(1,3,15,.92) 100%)!important}
+.band::before{content:"";position:absolute;inset:0;z-index:-1;background:url("/static/img/courtyard-dusk.jpg") center 30%/cover no-repeat;animation:kenburns 30s ease-in-out infinite alternate}
+.accent{position:absolute;z-index:3;right:-22px;top:-26px;width:84px;height:84px;filter:drop-shadow(0 8px 18px rgba(0,20,53,.18))}
+.a-badge{width:120px;height:50px;top:-20px;animation:tick 3.2s ease-in-out infinite;transform-origin:50% 50%}
+@keyframes tick{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(3deg) scale(1.04)}}
+.a-check .ring{fill:none;stroke:#1E8E3E;stroke-width:3;transform-origin:42px 42px;animation:ringpulse 2.4s ease-out infinite}
+@keyframes ringpulse{0%{transform:scale(.75);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+.a-nodes{width:100px;filter:drop-shadow(0 0 8px rgba(77,163,255,.6))}
+.a-nodes .n{fill:#02041A;stroke:#4DA3FF;stroke-width:2.5}.a-nodes .n.hot{fill:#E8F4FF;stroke:#7FD0FF}
+.a-nodes .n1{animation:nd1 6s ease-in-out infinite}.a-nodes .n2{animation:nd2 7s ease-in-out infinite}.a-nodes .n3{animation:nd1 5.5s ease-in-out infinite reverse}
+@keyframes nd1{50%{transform:translate(3px,-4px)}}@keyframes nd2{50%{transform:translate(-4px,3px)}}
+.a-nodes .l1{fill:none;stroke-dasharray:6 6;animation:dash 4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-48}}
+.a-scan .beam{animation:beam 2.6s ease-in-out infinite;filter:drop-shadow(0 0 4px #7FC4FF)}
+@keyframes beam{0%{transform:translateY(6px)}50%{transform:translateY(70px)}100%{transform:translateY(6px)}}
+@media (max-width:900px){.accent{right:-6px;top:-18px;width:64px;height:64px}.a-badge{width:100px;height:42px}.a-nodes{width:76px}}
+@media (prefers-reduced-motion:reduce){.media,.browser::after,.media.photo img,.band::before,.accent,.accent *{animation:none!important}.ed .row{opacity:1;transform:none;transition:none}.browser{transition:none}}
+body.below .smoke,body.below .fog{visibility:hidden}body.below .smoke *,body.below .fog *{animation-play-state:paused}
 </style>
 </head>
 <body>
@@ -216,7 +246,7 @@ html,body{overflow-x:clip}
       <p>Tell the Gemini shopping agent what you want, in English or ten Indian languages. It finds real products through Channel3, checks your spending rules in code, and you pay with PayPal (sandbox).</p>
       <a class="pill" data-tab="concierge" href="/app#concierge">Try the shopping agent</a>
     </div>
-    <div class="media"><div class="browser"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/checkout.jpg" alt="Agent checkout card: product, price, green mandate checks, risk decision approve, and the PayPal button"></div></div>
+    <div class="media"><svg class="accent a-check" viewBox="0 0 84 84" aria-hidden="true"><circle class="ring" cx="42" cy="42" r="30"/><circle cx="42" cy="42" r="22" fill="#E6F4EA"/><path d="M31 43l8 8 15-17" fill="none" stroke="#1E8E3E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="browser"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/checkout.jpg" alt="Agent checkout card: product, price, green mandate checks, risk decision approve, and the PayPal button"></div></div>
   </div>
   <div class="row flip">
     <div class="copy">
@@ -224,7 +254,7 @@ html,body{overflow-x:clip}
       <p>Every buyer, device and IP is a node in a live digital twin. A graph attention network spots rings of accounts sharing devices, and explains why.</p>
       <a class="pill" data-tab="command" href="/app#command">Explore the twin</a>
     </div>
-    <div class="media"><div class="browser"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/graph.jpg" alt="The twin graph in blue neon, with fraud rings labelled by the GAT"></div></div>
+    <div class="media"><svg class="accent a-nodes" viewBox="0 0 100 84" aria-hidden="true"><g stroke="#4DA3FF" stroke-width="1.6" opacity=".8"><path class="l1" d="M18 60 50 24 84 52 18 60"/></g><circle class="n n1" cx="18" cy="60" r="7"/><circle class="n n2" cx="50" cy="24" r="8"/><circle class="n n3 hot" cx="84" cy="52" r="7"/></svg><div class="browser"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/graph.jpg" alt="The twin graph in blue neon, with fraud rings labelled by the GAT"></div></div>
   </div>
   <div class="row">
     <div class="copy">
@@ -232,7 +262,7 @@ html,body{overflow-x:clip}
       <p>One click: a red team attacks a frozen copy, the simulator picks a safer policy and prices its cost to good customers, then the same attacks are replayed.</p>
       <a class="pill" data-tab="drill" href="/app#drill">Run the defense drill</a>
     </div>
-    <div class="media"><div class="browser"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/drill.jpg" alt="Defense drill scorecard: attack dollars that got through, before and after hardening"></div></div>
+    <div class="media"><svg class="accent a-scan" viewBox="0 0 84 84" aria-hidden="true"><path d="M42 8 16 18v20c0 18 11 31 26 38 15-7 26-20 26-38V18Z" fill="#001435" stroke="#4DA3FF" stroke-width="2.5"/><clipPath id="sc"><path d="M42 8 16 18v20c0 18 11 31 26 38 15-7 26-20 26-38V18Z"/></clipPath><g clip-path="url(#sc)"><rect class="beam" x="10" y="0" width="64" height="5" fill="#7FC4FF"/></g></svg><div class="browser"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/drill.jpg" alt="Defense drill scorecard: attack dollars that got through, before and after hardening"></div></div>
   </div>
   <div class="row flip">
     <div class="copy">
@@ -240,7 +270,7 @@ html,body{overflow-x:clip}
       <p>The investigator agent only proposes refunds and restrictions. Nothing happens until a person approves it, and every decision lands in an audit trail.</p>
       <a class="pill" data-tab="investigator" href="/app#investigator">Open the review queue</a>
     </div>
-    <div class="media"><div class="browser tallcrop"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/review.jpg" alt="Review queue with investigator proposals waiting for Approve or Reject"></div></div>
+    <div class="media"><svg class="accent a-badge" viewBox="0 0 120 50" aria-hidden="true"><rect x="2" y="6" width="116" height="38" rx="19" fill="#1E8E3E"/><path d="M20 25l6 6 11-12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="46" y="31" font-family="Plus Jakarta Sans,sans-serif" font-size="15" font-weight="700" fill="#fff">Approved</text></svg><div class="browser tallcrop"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/review.jpg" alt="Review queue with investigator proposals waiting for Approve or Reject"></div></div>
   </div>
   <div class="row">
     <div class="copy">
@@ -290,6 +320,24 @@ html,body{overflow-x:clip}
     if (queued) return; queued = true;
     requestAnimationFrame(() => { root.style.setProperty("--mx", mx.toFixed(1) + "px"); root.style.setProperty("--my", my.toFixed(1) + "px"); queued = false; });
   }, { passive: true });
+})();
+
+// Rows slide in on scroll; browser cards tilt gently toward the pointer.
+(() => {
+  const hero = document.querySelector(".hero");  // pause the smoke once the hero has scrolled away (saves GPU on laptops)
+  if (hero && "IntersectionObserver" in window) new IntersectionObserver((es) => document.body.classList.toggle("below", !es[0].isIntersecting), { rootMargin: "0px 0px 200px 0px" }).observe(hero);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rows = document.querySelectorAll(".ed .row");
+  if (reduce || !("IntersectionObserver" in window)) { rows.forEach((r) => r.classList.add("in")); return; }
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.18 });
+  rows.forEach((r) => io.observe(r));
+  document.querySelectorAll(".browser").forEach((b) => {
+    b.addEventListener("pointermove", (e) => {
+      const r = b.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+      b.style.setProperty("--ry", (x * 7).toFixed(2) + "deg"); b.style.setProperty("--rx", (-y * 6).toFixed(2) + "deg");
+    });
+    b.addEventListener("pointerleave", () => { b.style.setProperty("--ry", "0deg"); b.style.setProperty("--rx", "0deg"); });
+  });
 })();
 </script>
 </body>
