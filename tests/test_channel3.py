@@ -80,3 +80,15 @@ def test_poisoned_probe_ignores_channel3(team, monkeypatch):
     out = team.shopper_tools(poisoned=True)["search_catalog"]["fn"]("gift")
     assert any(r["sku"] == "SKU-EVIL-01" for r in out["results"])
     assert catalog.by_sku("C3-unknown") is None
+
+
+def test_demo_brain_buys_channel3_product_from_unknown_domain(team, monkeypatch):
+    """Regression: a live product's retailer domain is not a twin merchant (was KeyError 'williams-sonoma.com')."""
+    resp = {"products": [{"id": "ws1", "title": "Pour-over coffee kettle gift", "description": "for coffee lovers",
+                          "brands": [], "images": [{"url": "https://img.example/k.jpg", "is_main_image": True}],
+                          "offers": [{"url": "https://www.williams-sonoma.com/k", "domain": "williams-sonoma.com",
+                                      "price": {"price": 34.95, "currency": "USD"}, "availability": "InStock"}]}]}
+    monkeypatch.setattr(channel3.httpx, "post", lambda *a, **k: FakeResp(resp))
+    out = team.concierge("t-ws", "Buy a gift for a coffee lover under $40", "en-IN")
+    assert out["checkout"] and out["checkout"]["cart"][0]["sku"] == "C3-ws1"
+    assert "williams-sonoma.com" in out["reply"]

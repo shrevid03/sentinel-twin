@@ -228,7 +228,7 @@ class Team:
     def shopper_tools(self, poisoned=False, attack_log=None):
         def search_catalog(query: str = "", max_price: float | None = None, category: str | None = None):
             demo = catalog.search(query, max_price, category, poisoned=poisoned)
-            if poisoned or not channel3.enabled():  # red-team probes always use the (poisoned) demo catalog
+            if poisoned or not channel3.enabled() or getattr(self, "no_live", False):  # red-team probes always use the (poisoned) demo catalog
                 return {"results": demo}
             try:
                 live = [i for i in channel3.search(query, max_price, limit=6) if not category or i["category"] == category]
@@ -865,7 +865,7 @@ class Team:
         c, _ = call_tool("concierge", tools, "checkout", {"items": [{"sku": pick["sku"], "qty": 1}]}, trace)
         if c.get("status") == "awaiting_buyer_approval":
             return prefix + (f"I picked {pick['name']} for ${pick['price']:.2f} from "
-                             f"{self.twin.merchants[pick['merchant']]['name'].rstrip('.')}. Risk check passed "
+                             f"{(self.twin.merchants.get(pick['merchant']) or {}).get('name', pick['merchant']).rstrip('.')}. Risk check passed "
                              f"({c['risk']:.2f}). Approve the payment with the PayPal button below.")
         return prefix + f"Checkout was stopped: {c.get('reasons') or c.get('factors') or c.get('status')}"
 

@@ -178,12 +178,21 @@ class ChatIn(BaseModel):
 def chat(body: ChatIn):
     try:
         team.last_live = []
-        res = team.concierge(body.session, body.text, body.lang)
+        try:
+            res = team.concierge(body.session, body.text, body.lang)
+        except Exception:  # never show a raw error: retry once on the demo catalog only
+            team.last_live, team.no_live = [], True
+            try:
+                res = team.concierge(body.session, body.text, body.lang)
+            finally:
+                team.no_live = False
         res["products"] = [{k: p.get(k) for k in ("sku", "name", "price", "merchant", "image", "retailer_url", "brand", "category")}
                            for p in getattr(team, "last_live", [])]
         return res
-    except Exception as e:
-        raise HTTPException(500, f"agent error: {e}")
+    except Exception as e:  # last resort: a friendly reply instead of a raw 500
+        print("chat error:", type(e).__name__, e)
+        return {"trace": [], "checkout": None, "case": None, "redteam": None, "products": [],
+                "reply": "Sorry, I hit a snag talking to the shop. Please try that again."}
 
 
 class InvIn(BaseModel):
