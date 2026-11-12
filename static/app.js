@@ -51,91 +51,231 @@ async function loadStats() {
 
 /* ---------------- graph ---------------- */
 let network, nodesDS, edgesDS;
-/* "Midnight blue fog" palette for the twin graph */
+let graphMeta = {}, SIZE_K = 1;
+/* ---------- twin graph: "constellation of the twin" ---------- */
 const RISKY = (n) => (n.risk || 0) > 0.5 && n.status !== "frozen";
-const NODE_STYLE = {
-  account: { shape: "dot", size: 18, color: "#A5DDFF", glow: "rgba(0,156,222,0.9)", blur: 26 },
-  device: { shape: "square", size: 10, color: "#4FE3FF", glow: "rgba(79,227,255,0.75)", blur: 16 },
-  ip: { shape: "triangle", size: 11, color: "#B4C4E4", glow: "rgba(159,179,217,0.6)", blur: 14 },
-  merchant: { shape: "dot", size: 10, color: "#FFFFFF", glow: "rgba(255,255,255,0.5)", blur: 12 },
-};
-const EDGE_COLOR = { color: "rgba(120,190,255,0.5)", highlight: "rgba(160,215,255,1)", hover: "rgba(160,215,255,1)" };
-const EDGE_RISK = { color: "rgba(255,90,110,0.6)", highlight: "rgba(255,120,135,1)", hover: "rgba(255,120,135,1)" };
-const visNode = (n) => {
-  const st = NODE_STYLE[n.type] || NODE_STYLE.account, hot = RISKY(n), frozen = n.status === "frozen";
-  const fill = frozen ? "#6B7A90" : hot ? "#FF5A6E" : st.color;
-  return {
-    id: n.id, label: undefined, title: n.id, raw: n, shape: st.shape,
-    size: hot && n.type === "account" ? 26 : hot ? st.size + 3 : st.size,
-    borderWidth: n.type === "merchant" ? 2.5 : frozen ? 2 : 0, shapeProperties: { borderDashes: frozen ? [3, 3] : false },
-    color: { background: fill, border: n.type === "merchant" ? "#003087" : frozen ? "#C5CFDD" : fill,
-      highlight: { background: hot ? "#FF8796" : "#C9ECFF", border: "#FFFFFF" }, hover: { background: hot ? "#FF8796" : "#C9ECFF", border: "#FFFFFF" } },
-    shadow: frozen ? { enabled: false } : { enabled: true, color: hot ? "rgba(255,90,110,0.75)" : st.glow, size: hot ? 34 : st.blur, x: 0, y: 0 },
-  };
-};
-let riskyClusters = [];
-function computeClusters(g) {
-  const byId = Object.fromEntries(g.nodes.map((n) => [n.id, n])), adj = {};
-  g.edges.forEach((e) => { (adj[e.from] ||= []).push(e.to); (adj[e.to] ||= []).push(e.from); });
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const EDGE_COLOR = { color: "rgba(120,190,255,0.32)", highlight: "rgba(180,225,255,1)", hover: "rgba(180,225,255,1)" };
+const EDGE_RISK = { color: "rgba(255,90,110,0.55)", highlight: "rgba(255,140,155,1)", hover: "rgba(255,140,155,1)" };
+let rings = [], ringEdges = [], POS = {}, graphRaw = null, graphFocus = null;
+
+function adjOf(g) { const a = {}; g.edges.forEach((e) => { (a[e.from] ||= []).push(e.to); (a[e.to] ||= []).push(e.from); }); return a; }
+function findRings(g, byId, adj) {  // risky accounts linked through any shared device / IP
   const seen = new Set(), out = [];
-  g.nodes.filter(RISKY).forEach((n) => {
+  g.nodes.filter((n) => n.type === "account" && RISKY(n)).forEach((n) => {
     if (seen.has(n.id)) return;
     const comp = [], q = [n.id]; seen.add(n.id);
-    while (q.length) {  // risky accounts linked through shared devices / IPs
+    while (q.length) {
       const id = q.shift(); comp.push(id);
-      (adj[id] || []).forEach((m) => (adj[m] || []).concat([m]).forEach((k) => {
-        if (!seen.has(k) && byId[k] && RISKY(byId[k])) { seen.add(k); q.push(k); }
+      (adj[id] || []).forEach((m) => (adj[m] || []).forEach((k) => {
+        if (!seen.has(k) && byId[k]?.type === "account" && RISKY(byId[k])) { seen.add(k); q.push(k); }
       }));
     }
-    if (comp.length >= 2) out.push(comp);
+    if (comp.length < 2) return;
+    const set = new Set(comp), shared = Object.keys(adj).filter((x) => byId[x] && byId[x].type !== "account"
+      && (adj[x] || []).filter((a) => set.has(a)).length >= 2);
+    const risk = comp.reduce((s, id) => s + byId[id].risk, 0) / comp.length;
+    const top = comp.slice().sort((a, b) => byId[b].risk - byId[a].risk)[0];
+    out.push({ accounts: comp, shared, risk, top, members: new Set([...comp, ...shared]) });
   });
-  return out;
+  return out.sort((a, b) => b.accounts.length - a.accounts.length).map((r, i) => ({ ...r, n: i + 1 }));
 }
-const visEdges = (g) => {
-  const byId = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
-  return g.edges.map((e) => {
-    const hot = RISKY(byId[e.from] || {}) || RISKY(byId[e.to] || {});
-    return { id: `${e.from}|${e.to}`, from: e.from, to: e.to, color: hot ? EDGE_RISK : EDGE_COLOR, width: hot ? 2.6 : 2, hot };
-  });
-};
+function sampleGraph(g, target = 90) {  // fewer, bigger nodes: every risky account + an airy sample of legit ones
+  const byId = Object.fromEntries(g.nodes.map((n) => [n.id, n])), adj = adjOf(g);
+  const acc = g.nodes.filter((n) => n.type === "account");
+  const keep = new Set(acc.filter(RISKY).map((n) => n.id));
+  acc.filter((n) => !RISKY(n)).sort((a, b) => (adj[b.id]?.length || 0) - (adj[a.id]?.length || 0) || a.id.localeCompare(b.id))
+    .forEach((n) => { if (keep.size < target) keep.add(n.id); });
+  [...keep].forEach((id) => (adj[id] || []).forEach((m) => byId[m] && byId[m].type !== "account" && keep.add(m)));
+  return { nodes: g.nodes.filter((n) => keep.has(n.id)), edges: g.edges.filter((e) => keep.has(e.from) && keep.has(e.to)) };
+}
+
+/* custom node painters: glowing pearls, coral orbs, cyan diamonds, steel rings */
+function painter(n) {
+  return ({ ctx, x, y, state: { selected, hover }, style }) => {
+    const r = style.size * SIZE_K, hot = RISKY(n), frozen = n.status === "frozen";
+    return {
+      drawNode() {
+        ctx.save();
+        if (n.type === "account") {
+          const bloom = r * (hot ? 3.2 : 2.4);
+          let g = ctx.createRadialGradient(x, y, 0, x, y, bloom);
+          g.addColorStop(0, frozen ? "rgba(150,160,180,.25)" : hot ? "rgba(255,90,110,.42)" : "rgba(110,193,255,.36)");
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, bloom, 0, 6.283); ctx.fill();
+          g = ctx.createRadialGradient(x - r * 0.25, y - r * 0.25, 0, x, y, r);
+          if (frozen) { g.addColorStop(0, "#E2E8F0"); g.addColorStop(1, "#6B7A90"); }
+          else if (hot) { g.addColorStop(0, "#FFD1D6"); g.addColorStop(0.55, "#FF5A6E"); g.addColorStop(1, "rgba(255,90,110,.15)"); }
+          else { g.addColorStop(0, "#FFFFFF"); g.addColorStop(0.45, "#6EC1FF"); g.addColorStop(1, "rgba(110,193,255,.12)"); }
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+          if (frozen) { ctx.setLineDash([3, 3]); ctx.strokeStyle = "#C5CFDD"; ctx.lineWidth = 1.5; ctx.stroke(); }
+        } else if (n.type === "device") {
+          ctx.fillStyle = hot ? "rgba(255,90,110,.25)" : "rgba(79,227,255,.22)"; ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, 6.283); ctx.fill();
+          ctx.fillStyle = hot ? "#FF8796" : "#4FE3FF";
+          ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill();
+        } else if (n.type === "ip") {
+          ctx.strokeStyle = hot ? "#FF8796" : "#9FB3D9"; ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, 6.283); ctx.stroke();
+        } else {
+          ctx.fillStyle = "#fff"; ctx.strokeStyle = "#003087"; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); ctx.stroke();
+        }
+        if (selected || hover) { ctx.setLineDash([]); ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 1.5; ctx.shadowBlur = 0;
+          ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 6.283); ctx.stroke(); }
+        ctx.restore();
+      },
+      nodeDimensions: { width: r * 2, height: r * 2 },
+    };
+  };
+}
 const graphTip = (n) => { const el = document.createElement("div"); el.className = "gtip";
-  el.innerHTML = `<b>${esc(n.id)}</b><span>${esc(n.type)} · risk ${Number(n.risk || 0).toFixed(2)}${n.status === "frozen" ? " · restricted" : ""}</span>`; return el; };
+  el.innerHTML = `<b>${esc(n.id)}${n.label && n.type === "account" ? " · " + esc(n.label) : ""}</b><span>${esc(n.type)} · GAT risk ${Number(n.risk || 0).toFixed(2)}${n.status === "frozen" ? " · restricted" : ""}</span>`; return el; };
+const visNode = (n) => ({ id: n.id, title: graphTip(n), raw: n, shape: "custom", ctxRenderer: painter(n),
+  size: n.type === "account" ? (RISKY(n) ? 24 : 16) : n.type === "merchant" ? 16 : 6 });
+
+function buildData(g) {
+  const byId = Object.fromEntries(g.nodes.map((n) => [n.id, n])), adj = adjOf(g);
+  rings = findRings(g, byId, adj);
+  const inRing = {}; rings.forEach((r) => r.members.forEach((m) => (inRing[m] = r.n)));
+  ringEdges = [];
+  const edges = g.edges.map((e) => {
+    const ring = inRing[e.from] && inRing[e.from] === inRing[e.to];
+    const hot = ring || RISKY(byId[e.from] || {}) || RISKY(byId[e.to] || {});
+    const ed = { id: `${e.from}|${e.to}`, from: e.from, to: e.to, hot, color: hot ? EDGE_RISK : EDGE_COLOR, width: hot ? 1.8 : 1,
+      length: ring ? 70 : 90 };
+    if (ring) ringEdges.push({ from: e.from, to: e.to, phase: Math.random() });
+    return ed;
+  });
+  graphMeta = { nodes: g.nodes.length, links: g.edges.length };
+  return { nodes: g.nodes.map(visNode), edges };
+}
+
+function stretchToPanel() {  // physics gives a round blob; widen it to the panel's aspect ratio
+  const ids = nodesDS.getIds(), p = network.getPositions(ids), el = $("#graph");
+  const xs = ids.map((i) => p[i].x), ys = ids.map((i) => p[i].y);
+  const bw = Math.max(...xs) - Math.min(...xs) || 1, bh = Math.max(...ys) - Math.min(...ys) || 1;
+  const want = el.clientWidth / Math.max(1, el.clientHeight), have = bw / bh;
+  if (want > have * 1.05) {
+    const k = Math.min(2.2, want / have * 0.96), cx = (Math.max(...xs) + Math.min(...xs)) / 2;
+    ids.forEach((i) => network.moveNode(i, cx + (p[i].x - cx) * k, p[i].y));
+  }
+  network.fit({ animation: false, padding: 8 });
+  SIZE_K = Math.max(1, Math.min(4, 0.36 / network.getScale()));  // keep nodes readable however far the fit zooms out
+  edgesDS.update(edgesDS.get().map((e) => ({ id: e.id, width: (e.hot ? 1.6 : 1) * SIZE_K * 0.8 })));
+  POS = network.getPositions(); network.redraw();
+}
+
+let pulseRaf = 0, pulseCv = null, pulseCtx = null;
+function pulseLoop(now) {  // pulses live on their own overlay canvas, so the graph itself never redraws
+  pulseRaf = requestAnimationFrame(pulseLoop);
+  if (document.hidden || !document.querySelector("#tab-command.active") || !ringEdges.length || !network) return;
+  const el = $("#graph"), r = el.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) return;
+  if (!pulseCv) { pulseCv = document.createElement("canvas"); pulseCv.className = "pulsecv"; el.parentNode.insertBefore(pulseCv, el.nextSibling); pulseCtx = pulseCv.getContext("2d"); }
+  const dpr = Math.min(devicePixelRatio || 1, 2), W = el.clientWidth, H = el.clientHeight;
+  if (pulseCv.width !== Math.round(W * dpr) || pulseCv.height !== Math.round(H * dpr)) { pulseCv.width = Math.round(W * dpr); pulseCv.height = Math.round(H * dpr); }
+  const c = pulseCtx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+  const t = now / 5000, sc = network.getScale(), rad = Math.max(1.6, 2.4 * Math.sqrt(sc));
+  c.fillStyle = "rgba(255,160,175,0.6)";
+  ringEdges.forEach((e) => {
+    const a = POS[e.from], b = POS[e.to]; if (!a || !b) return;
+    const k = (t + e.phase) % 1, d = network.canvasToDOM({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k });
+    c.globalAlpha = 0.35; c.beginPath(); c.arc(d.x, d.y, rad * 2.4, 0, 6.283); c.fill();
+    c.globalAlpha = 1; c.beginPath(); c.arc(d.x, d.y, rad, 0, 6.283); c.fill();
+  });
+}
+
+function drawRingMist(ctx) {
+  rings.forEach((rg) => {
+    const ps = rg.accounts.map((id) => POS[id]).filter(Boolean); if (!ps.length) return;
+    const cx = ps.reduce((a, p) => a + p.x, 0) / ps.length, cy = ps.reduce((a, p) => a + p.y, 0) / ps.length;
+    const rad = 70 + Math.min(150, Math.max(...ps.map((p) => Math.hypot(p.x - cx, p.y - cy))) * 1.6);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    g.addColorStop(0, "rgba(255,90,110,0.20)"); g.addColorStop(0.55, "rgba(255,90,110,0.08)"); g.addColorStop(1, "rgba(255,90,110,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, 6.283); ctx.fill();
+    rg.c = { x: cx, y: cy, r: rad };
+  });
+}
+function drawPulses(ctx) {
+  if (REDUCED) return;
+  const t = performance.now() / 5000;
+  ctx.save(); ctx.fillStyle = "rgba(255,150,165,0.6)"; ctx.shadowColor = "rgba(255,90,110,0.9)"; ctx.shadowBlur = 8;
+  ringEdges.forEach((e) => {
+    const a = POS[e.from], b = POS[e.to]; if (!a || !b) return;
+    const k = (t + e.phase) % 1;
+    ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, 2.2, 0, 6.283); ctx.fill();
+  });
+  ctx.restore();
+}
+let chipKey = "";
+function placeRingChips() {
+  const box = $("#ring-chips"); if (!box) return;
+  const shown = rings.filter((r) => r.c).slice(0, 8);
+  const key = shown.map((r) => r.n).join(",") + "|" + network.getScale().toFixed(3) + JSON.stringify(network.getViewPosition());
+  if (key === chipKey) return; chipKey = key;
+  if (box.childElementCount !== shown.length) {
+    box.innerHTML = shown.map((r) => `<button class="ringchip" data-ring="${r.n}" title="Focus ring ${r.n} and explain its riskiest account"><i></i><b>Ring ${r.n}</b> · ${r.accounts.length} accounts · ${r.shared.length} shared · risk ${r.risk.toFixed(2)}</button>`).join("");
+    box.querySelectorAll(".ringchip").forEach((b) => b.onclick = () => focusRing(+b.dataset.ring));
+  }
+  const W = $("#graph").clientWidth, H = $("#graph").clientHeight, placed = [];
+  shown.map((r, i) => ({ r, i, d: network.canvasToDOM({ x: r.c.x, y: r.c.y }) })).sort((a, b) => a.d.y - b.d.y).forEach(({ r, i, d }) => {
+    const el = box.children[i], w = el.offsetWidth, h = el.offsetHeight + 6;
+    const right = d.x + 30 + w < W - 8;  // sit beside the ring, on whichever side has room
+    let x = right ? d.x + 30 : d.x - 30 - w, y = Math.max(46, d.y - h / 2);
+    for (let k = 0; k < 12; k++) {  // nudge down past chips already placed
+      const hit = placed.find((p) => x < p.x + p.w && x + w > p.x && y < p.y + p.h && y + h > p.y);
+      if (!hit) break; y = hit.y + hit.h;
+    }
+    x = Math.max(8, Math.min(W - w - 8, x)); y = Math.min(H - h - 8, y);
+    placed.push({ x, y, w, h });
+    el.style.transform = `translate(${x}px, ${y}px)`;
+  });
+}
+function focusRing(n) {
+  const r = rings.find((x) => x.n === n); if (!r) return;
+  network.fit({ nodes: [...r.members], animation: REDUCED ? false : { duration: 700, easingFunction: "easeInOutQuad" } });
+  network.selectNodes(r.accounts); explain(r.top);
+}
+function renderHud() {
+  $("#hud-stats").innerHTML = `<span class="live"></span>${graphMeta.nodes} nodes · ${graphMeta.links} links · <b>${rings.length} ring${rings.length === 1 ? "" : "s"}</b> detected by the GAT`;
+}
+
 async function loadGraph(focus) {
   const g = await api("/api/graph" + (focus ? `?focus=${focus}` : ""));
-  const nodes = g.nodes.map((n) => ({ ...visNode(n), title: graphTip(n) })), edges = visEdges(g);
-  riskyClusters = computeClusters(g);
+  graphRaw = g; graphFocus = focus || null;
+  const data = buildData(focus ? g : sampleGraph(g));
   if (!network) {
-    nodesDS = new vis.DataSet(nodes); edgesDS = new vis.DataSet(edges);
+    nodesDS = new vis.DataSet(data.nodes); edgesDS = new vis.DataSet(data.edges);
     network = new vis.Network($("#graph"), { nodes: nodesDS, edges: edgesDS }, {
-      physics: { solver: "barnesHut", barnesHut: { gravitationalConstant: -4200, springLength: 110, centralGravity: 0.18, springConstant: 0.03, damping: 0.25, avoidOverlap: 0.1 },
-        stabilization: { iterations: 300, fit: true }, minVelocity: 0.75 },
-      interaction: { hover: true, tooltipDelay: 60, hoverConnectedEdges: true, selectConnectedEdges: true },
-      edges: { width: 2, smooth: { type: "continuous", roundness: 0.2 }, selectionWidth: 1.5, hoverWidth: 1.2 },
+      physics: { solver: "barnesHut", barnesHut: { gravitationalConstant: -9000, springLength: 140, centralGravity: 0.9, springConstant: 0.05, damping: 0.3, avoidOverlap: 0.6 },
+        stabilization: { iterations: 400, fit: true }, minVelocity: 0.75 },
+      interaction: { hover: true, tooltipDelay: 60, hoverConnectedEdges: true, selectConnectedEdges: true, zoomSpeed: 0.6 },
+      edges: { smooth: { type: "continuous", roundness: 0.2 }, selectionWidth: 1.2, hoverWidth: 1 },
       nodes: { font: { size: 0 } },
     });
     network.on("click", (p) => p.nodes[0] && explain(p.nodes[0]));
-    network.on("stabilizationIterationsDone", () => { network.setOptions({ physics: { enabled: false } }); network.fit({ animation: false, padding: 10 }); });
-    network.on("beforeDrawing", (ctx) => {  // soft coral mist under each fraud ring
-      if (!riskyClusters.length) return;
-      const pos = network.getPositions(riskyClusters.flat());
-      riskyClusters.forEach((c) => {
-        const ps = c.map((id) => pos[id]).filter(Boolean); if (!ps.length) return;
-        const cx = ps.reduce((a, p) => a + p.x, 0) / ps.length, cy = ps.reduce((a, p) => a + p.y, 0) / ps.length;
-        const r = 90 + Math.min(160, Math.max(...ps.map((p) => Math.hypot(p.x - cx, p.y - cy))) * 1.4);
-        const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        grd.addColorStop(0, "rgba(255,90,110,0.2)"); grd.addColorStop(0.55, "rgba(255,90,110,0.09)"); grd.addColorStop(1, "rgba(255,90,110,0)");
-        ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fill();
-      });
-    });
+    network.on("stabilizationIterationsDone", () => { network.setOptions({ physics: { enabled: false } }); stretchToPanel(); });
+    network.on("dragEnd", () => { POS = network.getPositions(); });
+    network.on("beforeDrawing", drawRingMist);
+    network.on("afterDrawing", () => placeRingChips());
+    $("#hud-zoom-in").onclick = () => network.moveTo({ scale: network.getScale() * 1.25, animation: { duration: 250 } });
+    $("#hud-zoom-out").onclick = () => network.moveTo({ scale: network.getScale() / 1.25, animation: { duration: 250 } });
+    $("#hud-ring").onclick = () => rings[0] && focusRing(rings.slice().sort((a, b) => b.risk - a.risk)[0].n);
+    if (!REDUCED) pulseRaf = requestAnimationFrame(pulseLoop);
   } else {
-    // update in place so positions stay put; only new nodes need a short settle
-    const keep = new Set(nodes.map((n) => n.id)), keepE = new Set(edges.map((e) => e.id));
-    nodesDS.remove(nodesDS.getIds().filter((id) => !keep.has(id))); edgesDS.remove(edgesDS.getIds().filter((id) => !keepE.has(id)));
-    const fresh = nodes.some((n) => !nodesDS.get(n.id));
-    nodesDS.update(nodes); edgesDS.update(edges);
-    if (fresh || focus) { network.setOptions({ physics: { enabled: true } }); network.stabilize(120); }
+    network.setOptions({ physics: { enabled: true } });
+    nodesDS.clear(); edgesDS.clear(); chipKey = ""; $("#ring-chips").innerHTML = "";
+    nodesDS.add(data.nodes); edgesDS.add(data.edges);
+    network.stabilize(400);
   }
+  renderHud();
 }
+async function refreshGraphColors() {  // periodic: update risk on the nodes already shown, keep the layout
+  if (!network || graphFocus) return;
+  const g = await api("/api/graph"), byId = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
+  nodesDS.update(nodesDS.getIds().filter((id) => byId[id]).map((id) => visNode(byId[id])));
+}
+
 async function explain(id) {
   const e = await api("/api/explain/" + id);
   const max = Math.max(...e.top_neighbors.map((n) => n.attention), 0.01);
@@ -461,5 +601,5 @@ function refresh() { loadStats(); loadFeed(); }
   addMsg("bot", "Namaste! I'm Sentinel. I can shop for you and pay with PayPal, explain the twin, investigate fraud, or unleash the red team. Pick a language and type or tap the mic.");
   renderAttacks(); loadMandate(); refresh(); loadGraph();
   setInterval(refresh, 4000);
-  setInterval(() => document.querySelector("#tab-command.active") && loadGraph(), 30000);
+  setInterval(() => document.querySelector("#tab-command.active") && refreshGraphColors(), 30000);
 })();

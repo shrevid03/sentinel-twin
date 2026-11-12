@@ -261,3 +261,41 @@ div.vis-tooltip{padding:0!important;border:0!important;background:transparent!im
 .pcard a,.pc-hero a{font-size:12px;font-weight:600}
 .pc-hero{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:12.5px;color:var(--muted)}
 .pc-hero img{width:72px;height:72px;object-fit:contain;border-radius:12px;background:#F5F7FA;border:1px solid var(--line)}
+
+/* ===== graph round 3: constellation ===== */
+.graphwrap #graph{height:560px}
+.graphwrap .fog i{animation-duration:var(--d,60s)!important}
+.graphwrap .fog i:nth-child(1){width:70%;height:22%;left:-10%;top:18%;border-radius:50%;background:linear-gradient(90deg,transparent,rgba(0,194,255,.42),rgba(58,91,255,.38),transparent);filter:blur(60px);transform:rotate(-12deg);animation:aurA 70s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(2){width:80%;height:20%;right:-15%;top:52%;left:auto;border-radius:50%;background:linear-gradient(90deg,transparent,rgba(123,97,255,.36),rgba(0,112,224,.40),transparent);filter:blur(70px);transform:rotate(8deg);animation:aurB 85s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(3){width:60%;height:18%;left:15%;bottom:6%;top:auto;border-radius:50%;background:linear-gradient(90deg,transparent,rgba(0,156,222,.38),transparent);filter:blur(55px);transform:rotate(-4deg);animation:aurA 95s ease-in-out infinite alternate-reverse}
+.graphwrap .fog i:nth-child(4){width:50%;height:65%;left:-8%;top:-12%;background:radial-gradient(circle,rgba(0,112,224,.45),transparent 70%);filter:blur(100px);animation:fogA 60s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(5){width:48%;height:60%;right:-6%;top:-6%;left:auto;bottom:auto;background:radial-gradient(circle,rgba(58,91,255,.40),transparent 70%);filter:blur(110px);animation:fogB 75s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(6){width:55%;height:60%;left:28%;bottom:-25%;top:auto;background:radial-gradient(circle,rgba(123,97,255,.30),transparent 70%);filter:blur(120px);animation:fogC 90s ease-in-out infinite alternate;position:absolute;border-radius:50%;mix-blend-mode:screen}
+@keyframes aurA{to{transform:translate(14%,6%) rotate(-4deg) scaleX(1.15)}}
+@keyframes aurB{to{transform:translate(-12%,-8%) rotate(14deg) scaleX(.9)}}
+.graphwrap .stardust{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.15;
+  background-image:radial-gradient(1px 1px at 12px 18px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 83px 64px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 141px 27px,#cfe8ff 50%,transparent 51%),radial-gradient(1px 1px at 47px 121px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 167px 143px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 109px 176px,#cfe8ff 50%,transparent 51%),radial-gradient(1px 1px at 191px 92px,#fff 50%,transparent 51%);
+  background-size:200px 200px}
+.graphwrap .vignette{box-shadow:inset 0 0 110px 24px rgba(0,8,30,.7)}
+/* HUD */
+.hud{position:absolute;z-index:3;color:#DCEBFF;font-size:12px}
+.hud-tl,.ringchip,.hudbtn,.hud-br{background:rgba(10,31,77,.55);border:1px solid rgba(143,211,255,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 6px 18px rgba(0,8,30,.35)}
+.hud-tl{top:12px;left:12px;padding:6px 12px;border-radius:999px;display:flex;align-items:center;gap:6px}
+.hud-tl b{color:#FF9AA7}
+.hud-tl .live{width:7px;height:7px;border-radius:50%;background:#4FE3FF;box-shadow:0 0 8px #4FE3FF;animation:livepulse 2.4s ease-in-out infinite}
+@keyframes livepulse{50%{opacity:.35}}
+.hud-tr{top:12px;right:12px;display:flex;gap:6px}
+.hudbtn{width:30px;height:30px;padding:0;border-radius:50%;color:#DCEBFF;font-size:16px;line-height:1;display:grid;place-items:center}
+.hudbtn:hover{background:rgba(0,112,224,.6);border-color:#8FD3FF;color:#fff}
+.hud-br{right:12px;bottom:12px;padding:8px 10px;border-radius:12px;display:grid;grid-template-columns:auto auto;grid-template-rows:auto 34px 34px;column-gap:6px;font-size:11px}
+.hud-br span{grid-column:1/3;margin-bottom:4px;font-weight:600}
+.hud-br .riskscale{grid-row:2/4;width:8px;border-radius:4px;background:linear-gradient(180deg,#FF5A6E,#C46BD8 45%,#6EC1FF)}
+.hud-br small{color:#9FB3D9}.hud-br small:last-child{align-self:end}
+#ring-chips{position:absolute;inset:0;z-index:3;pointer-events:none}
+.ringchip{position:absolute;left:0;top:0;pointer-events:auto;white-space:nowrap;padding:4px 10px;border-radius:999px;color:#FFE3E7;font-size:11.5px;font-weight:500;border-color:rgba(255,120,135,.4);transition:background .15s}
+.ringchip i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#FF5A6E;box-shadow:0 0 6px #FF5A6E;margin-right:6px;vertical-align:1px}
+.ringchip b{color:#fff}
+.ringchip:hover{background:rgba(255,90,110,.35);border-color:#FF8796;color:#fff}
+@media (prefers-reduced-motion:reduce){.hud-tl .live{animation:none}}
+
+.pulsecv{position:absolute;left:0;top:0;width:100%;height:560px;z-index:2;pointer-events:none}
