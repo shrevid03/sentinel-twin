@@ -22,6 +22,7 @@ if (window.Chart) {
   Chart.defaults.plugins.legend.display = true;
   Chart.defaults.plugins.legend.labels.usePointStyle = true;
   Chart.defaults.elements.bar.borderRadius = 6;
+  Chart.defaults.animation = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? false : { duration: 1000, easing: "easeOutQuart" };
   Chart.defaults.elements.line.borderWidth = 2.5; Chart.defaults.elements.point.radius = 0;
 }
 let CFG = {};

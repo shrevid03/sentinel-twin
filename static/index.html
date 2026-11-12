@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="/static/vendor/ag-grid.css">
 <link rel="stylesheet" href="/static/vendor/ag-theme-quartz.css">
-<link rel="stylesheet" href="/static/style.css?v=5">
+<link rel="stylesheet" href="/static/style.css?v=6">
 </head>
 <body>
 <div id="page-smoke" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -111,6 +111,11 @@
 
 <!-- DEFENSE DRILL -->
 <section id="tab-drill" class="tab">
+  <div class="tabhero"><div><h2>Defense drill</h2><p>Attack a frozen copy of the twin, search for a safer policy, then replay the same attacks to prove it.</p></div><svg viewBox="0 0 170 96" role="img" aria-label="Attacker blocked by a shield, then a check mark">
+<circle cx="28" cy="48" r="20" fill="#EAF4FF"/><circle cx="28" cy="40" r="7" fill="#D93025"/><path d="M15 64c2-10 7-14 13-14s11 4 13 14z" fill="#D93025" opacity=".85"/>
+<path d="M52 48h22" stroke="#D93025" stroke-width="3" stroke-dasharray="4 4"/><path d="M70 42l8 6-8 6" fill="none" stroke="#D93025" stroke-width="3"/>
+<path d="M98 14 78 21v16c0 15 9 26 20 30 11-4 20-15 20-30V21z" fill="#003087"/><path d="M98 22 86 26v11c0 9 5 16 12 19z" fill="#0070E0" opacity=".7"/>
+<path d="M120 48h14" stroke="#009CDE" stroke-width="3"/><circle cx="150" cy="48" r="16" fill="#E6F4EA"/><path d="M143 48l5 5 9-10" fill="none" stroke="#1E8E3E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   <div class="card drill-hero"><div class="cardhead"><div><h3>Defense drill <span class="tag synth">Synthetic attack traffic</span> <span class="tag">Policy hardening</span></h3>
     <p class="muted">One click: the red team attacks a frozen copy of the twin, the simulator searches 216 policies while pricing false positives, then the <b>same</b> seeded attacks are replayed under the winner. Live traffic is untouched until you apply.</p></div>
     <div class="row"><button id="btn-drill" class="big">Run defense drill</button><button class="ghost" id="btn-drill-apply" disabled>Apply hardened policy to live</button><button class="ghost" id="btn-drill-rollback" disabled>Roll back</button></div></div>
@@ -130,6 +135,10 @@
 
 <!-- CONCIERGE -->
 <section id="tab-concierge" class="tab">
+  <div class="tabhero"><div><h2>Concierge · chat & voice</h2><p>Shop and pay with PayPal in ten Indian languages. Spending limits are enforced in code, not by the model.</p></div><svg viewBox="0 0 170 96" role="img" aria-label="Chat bubble with Indian language glyphs and a shopping bag">
+<path d="M12 14h96a12 12 0 0 1 12 12v34a12 12 0 0 1-12 12H48l-18 16v-16H12A12 12 0 0 1 0 60V26a12 12 0 0 1 12-12z" fill="#0070E0" transform="translate(4 0)"/>
+<text x="20" y="52" font-family="Noto Sans, sans-serif" font-size="22" font-weight="700" fill="#fff">अ த ক</text>
+<path d="M124 38h36l-4 46h-28z" fill="#003087"/><path d="M134 38v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#003087" stroke-width="3.5"/><circle cx="142" cy="60" r="6" fill="#009CDE"/></svg></div>
   <div class="grid2">
     <div class="card chat">
       <div class="cardhead"><h3>Talk to Sentinel</h3>
@@ -160,6 +169,11 @@
 
 <!-- INVESTIGATOR -->
 <section id="tab-investigator" class="tab">
+  <div class="tabhero"><div><h2>Investigator</h2><p>An AI analyst that follows shared devices and IPs through the graph and proposes actions for human approval.</p></div><svg viewBox="0 0 170 96" role="img" aria-label="Magnifier over connected nodes">
+<g stroke="#009CDE" stroke-width="2" opacity=".7"><path d="M20 30 50 50 30 75M50 50 85 30 110 55M85 30 75 12M110 55 140 40"/></g>
+<g fill="#fff" stroke="#0070E0" stroke-width="2.5"><circle cx="20" cy="30" r="6"/><circle cx="30" cy="75" r="6"/><circle cx="75" cy="12" r="5"/><circle cx="140" cy="40" r="6"/></g>
+<circle cx="50" cy="50" r="7" fill="#D93025"/><circle cx="85" cy="30" r="7" fill="#D93025"/><circle cx="110" cy="55" r="6" fill="#0070E0"/>
+<circle cx="80" cy="42" r="26" fill="#EAF4FF" fill-opacity=".55" stroke="#003087" stroke-width="5"/><path d="M99 61l22 22" stroke="#003087" stroke-width="9" stroke-linecap="round"/></svg></div>
   <div class="grid2">
     <div class="card"><div class="cardhead"><h3>Accounts ranked by GAT risk</h3>
       <button id="btn-investigate-top">Investigate riskiest</button></div>
@@ -178,6 +192,11 @@
 
 <!-- RED TEAM -->
 <section id="tab-redteam" class="tab">
+  <div class="tabhero"><div><h2>Adaptive red team</h2><p>An attacker agent that probes the twin, learns what was intercepted and changes tactics. Synthetic traffic only.</p></div><svg viewBox="0 0 170 96" role="img" aria-label="Hooded figure next to a target">
+<circle cx="120" cy="48" r="38" fill="none" stroke="#D93025" stroke-width="2" opacity=".35"/><circle cx="120" cy="48" r="26" fill="none" stroke="#D93025" stroke-width="2" opacity=".55"/><circle cx="120" cy="48" r="13" fill="none" stroke="#D93025" stroke-width="2.5"/><circle cx="120" cy="48" r="4" fill="#D93025"/>
+<path d="M120 4v14M120 78v14M76 48h14M150 48h14" stroke="#D93025" stroke-width="2"/>
+<path d="M18 92c0-26 10-40 26-46-10-4-14-14-12-24 2-12 12-18 22-18s20 6 22 18c2 10-2 20-12 24 16 6 26 20 26 46z" fill="#003087"/>
+<ellipse cx="54" cy="30" rx="11" ry="13" fill="#001435"/><circle cx="50" cy="31" r="1.8" fill="#009CDE"/><circle cx="58" cy="31" r="1.8" fill="#009CDE"/></svg></div>
   <div class="card"><div class="cardhead"><h3>Adaptive red team <span class="tag synth">Synthetic attack traffic</span></h3>
     <div><button id="btn-campaign">Launch adaptive campaign</button></div></div>
     <p class="muted">The red team attacks a sandboxed fork of the twin, watches what got intercepted (blocked or sent to review), then changes tactics to evade. Nothing touches live state.</p>
@@ -196,6 +215,12 @@
 
 <!-- WHAT IF -->
 <section id="tab-whatif" class="tab">
+  <div class="tabhero"><div><h2>What-if simulator</h2><p>Replay traffic and attacks under a proposed policy before you touch the live one.</p></div><svg viewBox="0 0 170 96" role="img" aria-label="Policy sliders next to a bar chart">
+<g stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"><path d="M10 22h60M10 48h60M10 74h60"/></g>
+<g stroke="#0070E0" stroke-width="4" stroke-linecap="round"><path d="M10 22h38M10 48h18M10 74h48"/></g>
+<g fill="#fff" stroke="#003087" stroke-width="3"><circle cx="48" cy="22" r="6"/><circle cx="28" cy="48" r="6"/><circle cx="58" cy="74" r="6"/></g>
+<rect x="88" y="10" width="76" height="78" rx="10" fill="#fff" stroke="#EAF4FF" stroke-width="2"/>
+<rect x="98" y="52" width="10" height="28" rx="3" fill="#003087"/><rect x="112" y="40" width="10" height="40" rx="3" fill="#009CDE"/><rect x="128" y="58" width="10" height="22" rx="3" fill="#003087"/><rect x="142" y="26" width="10" height="54" rx="3" fill="#009CDE"/></svg></div>
   <div class="grid2">
     <div class="card"><h3>Policy under test</h3>
       <div class="form" id="policy-form"></div>
@@ -209,6 +234,12 @@
 
 <!-- LEDGER -->
 <section id="tab-ledger" class="tab">
+  <div class="tabhero"><div><h2>Ledger</h2><p>Every order mirrored into the twin, every agent checkout and every PayPal API call.</p></div><svg viewBox="0 0 170 96" role="img" aria-label="A stack of receipts">
+<g transform="translate(40 6)"><rect x="16" y="0" width="70" height="80" rx="8" fill="#EAF4FF" stroke="#009CDE" stroke-width="2" transform="rotate(8 50 40)"/>
+<rect x="8" y="4" width="70" height="80" rx="8" fill="#fff" stroke="#009CDE" stroke-width="2" transform="rotate(-5 43 44)"/>
+<rect x="12" y="6" width="70" height="82" rx="8" fill="#fff" stroke="#0070E0" stroke-width="2.5"/>
+<rect x="22" y="18" width="36" height="6" rx="3" fill="#003087"/><g fill="#CBD5E1"><rect x="22" y="32" width="50" height="5" rx="2.5"/><rect x="22" y="43" width="44" height="5" rx="2.5"/><rect x="22" y="54" width="48" height="5" rx="2.5"/></g>
+<rect x="22" y="68" width="30" height="8" rx="4" fill="#0070E0"/><circle cx="66" cy="72" r="8" fill="#E6F4EA"/><path d="M62 72l3 3 5-6" fill="none" stroke="#1E8E3E" stroke-width="2.5"/></g></svg></div>
   <div class="card"><div class="cardhead"><h3>Orders mirrored in the twin</h3><input id="ord-filter" placeholder="Filter…"></div>
     <div id="ord-grid" class="ag-theme-quartz gridbox tall"></div></div>
   <div class="grid2">
@@ -243,10 +274,10 @@
 <script src="/static/vendor/chart.umd.min.js"></script>
 <script src="/static/vendor/marked.min.js"></script>
 <script src="/static/vendor/purify.min.js"></script>
-<script src="/static/app.js?v=5"></script>
-<script src="/static/drill.js?v=5"></script>
-<script src="/static/receipts.js?v=5"></script>
-<script src="/static/review.js?v=5"></script>
-<script src="/static/fx.js?v=5"></script>
+<script src="/static/app.js?v=6"></script>
+<script src="/static/drill.js?v=6"></script>
+<script src="/static/receipts.js?v=6"></script>
+<script src="/static/review.js?v=6"></script>
+<script src="/static/fx.js?v=6"></script>
 </body>
 </html>
