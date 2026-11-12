@@ -51,7 +51,8 @@ def _summary(kind, params, orders, notes=""):
         "attack": kind, "params": params, "orders": [
             {"id": o["id"], "account": o["account"], "amount": o["amount"], "decision": o["decision"],
              "risk": o["risk"], "factors": o["factors"][:3], "fraud": o["fraud"],
-             "new_device": o.get("new_device", False), "spend_ratio": o.get("spend_ratio", 0)} for o in orders],
+             "new_device": o.get("new_device", False), "spend_ratio": o.get("spend_ratio", 0),
+             "gat_risk": o.get("gat_risk"), "txn_score": o.get("txn_score"), "attack": kind} for o in orders],
         "fraud_usd": round(total, 2), "stopped_usd": round(stopped, 2), "evaded_usd": round(total - stopped, 2),
         "detection_rate": round(stopped / total, 3) if total else 1.0, "notes": notes,
     }

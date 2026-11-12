@@ -76,6 +76,8 @@ async function runDrill() {
         scales: { x: { ticks: { color: "#93a0bd" } }, y: { ticks: { color: "#93a0bd" }, grid: { color: "#24304f" } } } } });
     }
     drillChart.resize();
+    await sleep(600);
+    renderCompare(d.compare);
     $("#drill-status").textContent = `Drill finished in ${d.seconds}s on a frozen copy of the twin (seed ${d.seed}). Nothing live has changed yet.`;
     $("#btn-drill-apply").disabled = !d.chosen;
   } catch (e) {
@@ -83,6 +85,38 @@ async function runDrill() {
   }
   btn.disabled = false;
   btn.textContent = "Run defense drill";
+}
+
+/* step 5: rules only vs GAT + rules vs GAT + rules hardened, on identical orders */
+let cmpChart = null;
+const ENGINE = { rules_only: "Rules only (no graph)", gat_rules: "GAT + rules", gat_rules_hardened: "GAT + rules, hardened policy" };
+const ATTACK_LABEL = { "live fraud traffic": "Live fraud traffic (accounts the GAT trained on)", fraud_ring: "Fraud rings",
+  device_farm_evasion: "Device farms", card_testing: "Card testing", account_takeover: "Account takeover", synthetic_identity: "Synthetic identity" };
+function renderCompare(c) {
+  if (!c) return;
+  const names = Object.keys(c.engines);
+  $("#d-engines").innerHTML = `<table class="dtable"><tr><th>Engine</th><th class="n">Unseen attacks intercepted</th><th class="n">All fraud intercepted</th>
+    <th class="n">Fraud blocked / reviewed</th><th class="n">Good orders reviewed</th><th class="n">Good $ blocked</th><th class="n">FP cost</th></tr>
+    ${names.map((n) => { const e = c.engines[n], u = c.unseen_attacks[n]; return `<tr class="${n === "gat_rules_hardened" ? "chosen" : ""}"><td>${ENGINE[n]}</td>
+      <td class="n"><b>${pct(u.intercept_rate)}</b> <small class="muted">of ${money(u.total_usd)}</small></td><td class="n">${pct(e.intercept_rate)}</td>
+      <td class="n">${money(e.fraud_blocked_usd)} / ${money(e.fraud_reviewed_usd)}</td><td class="n">${e.good_reviewed} of ${e.good_total}</td>
+      <td class="n">${money(e.good_blocked_usd)}</td><td class="n">${money(e.false_positive_cost_usd)}</td></tr>`; }).join("")}</table>`;
+  const kinds = Object.keys(c.by_attack).filter((k) => k !== "live fraud traffic");
+  const colors = { rules_only: "#93a0bd", gat_rules: "#3d9bff", gat_rules_hardened: "#2ecc8f" };
+  const data = { labels: kinds.map((k) => ATTACK_LABEL[k] || k), datasets: names.map((n) => ({ label: ENGINE[n],
+    data: kinds.map((k) => Math.round((c.by_attack[k][n] || 0) * 100)), backgroundColor: colors[n] })) };
+  const opts = { plugins: { legend: { labels: { color: "#cdd6ee" } } }, scales: { x: { ticks: { color: "#93a0bd" } },
+    y: { max: 100, ticks: { color: "#93a0bd", callback: (v) => v + "%" }, grid: { color: "#24304f" } } } };
+  $("#ds-5").classList.add("show");
+  if (cmpChart) { cmpChart.data = data; cmpChart.update(); } else cmpChart = new Chart($("#d-cmp-chart"), { type: "bar", data, options: opts });
+  cmpChart.resize();
+  const winsFor = (a, b) => kinds.filter((k) => (c.by_attack[k][a] || 0) > (c.by_attack[k][b] || 0)).map((k) => ATTACK_LABEL[k] || k);
+  const g = winsFor("gat_rules", "rules_only"), r = winsFor("rules_only", "gat_rules");
+  $("#d-byattack").innerHTML = `<p>The graph wins on <b>${esc(g.join(", ") || "none")}</b>: fresh accounts tied together by shared devices and IPs.
+    ${r.length ? `Rules alone do better on <b>${esc(r.join(", "))}</b>.` : ""} Where both are equal, the attack looks normal on the graph too, and only the policy layer helps.</p>
+    ${c.by_attack["live fraud traffic"] ? `<p class="muted">"Live fraud traffic" (${money(c.by_attack["live fraud traffic"].total_usd)}) comes from accounts the GAT was trained on, so it is left out of the unseen-attack figure and the chart.</p>` : ""}`;
+  const a = c.account_auc;
+  $("#d-auc").textContent = a ? `Account-level held-out AUC on ${a.test_accounts} test accounts: same features with no graph ${a.features_only_no_graph}, GAT ${a.gat}. On this synthetic data, the graph's value shows up per transaction (new accounts joining a known ring), not in ranking already-known accounts.` : "";
 }
 
 $("#btn-drill").onclick = runDrill;

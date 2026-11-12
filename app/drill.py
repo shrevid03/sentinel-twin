@@ -111,6 +111,9 @@ def defense_drill(twin, seed=7, apply=False, log=None):
         say("verify", f"same attacks replayed: ${sum(v['evaded_usd'] for v in verify):,.0f} got through "
                       f"(was ${sum(b['evaded_usd'] for b in breaches):,.0f})")
 
+    # ---- 4. why a graph? the same orders through rules only, GAT + rules, and GAT + rules hardened
+    compare = base.compare_engines(attack_orders, best["policy"] if best else None, review_cost=REVIEW_COST_USD)
+
     def tot(rs, k):
         return round(sum(r[k] for r in rs), 2)
 
@@ -134,7 +137,7 @@ def defense_drill(twin, seed=7, apply=False, log=None):
         "top_candidates": [{k: c[k] for k in ("policy", "catch_rate", "fraud_caught_usd", "good_reviewed",
                                                "good_blocked_usd", "false_positive_cost_usd", "net_benefit_usd",
                                                "legit_review_rate")} for c in ok[:6]],
-        "verify": [_slim(r) for r in verify], "fresh": [_slim(r) for r in fresh],
+        "verify": [_slim(r) for r in verify], "fresh": [_slim(r) for r in fresh], "compare": compare,
         "summary": {
             "breach_evaded_before_usd": tot(breaches, "evaded_usd"),
             "breach_evaded_after_usd": tot(verify, "evaded_usd") if best else None,

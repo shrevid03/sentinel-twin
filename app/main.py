@@ -210,12 +210,31 @@ class DrillIn(BaseModel):
     apply: bool = False
 
 
+LAST_DRILL: dict = {}
+
+
 @app.post("/api/drill")
 def drill(body: DrillIn):
     """One-click defense drill: attack, search for a safer policy, replay the same attack, optionally apply."""
     res = defense_drill(twin, seed=body.seed, apply=body.apply)
     team.last_attack_orders = [o for r in res["probes"] + res["adapted"] for o in r["orders"]]
+    LAST_DRILL.clear()
+    LAST_DRILL.update(res)
     return res
+
+
+@app.get("/api/compare")
+def compare_get():
+    """Rules only vs GAT + rules vs GAT + rules hardened, on the latest drill's orders (runs a drill if none yet)."""
+    if not LAST_DRILL:
+        drill(DrillIn())
+    return LAST_DRILL["compare"]
+
+
+@app.post("/api/compare")
+def compare_post(body: DrillIn):
+    """Run a fresh drill (never applied) and return its rules-vs-graph comparison."""
+    return drill(DrillIn(seed=body.seed, apply=False))["compare"]
 
 
 @app.get("/api/redteam/runs")

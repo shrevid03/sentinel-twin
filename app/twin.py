@@ -256,6 +256,7 @@ class Twin:
 
             (ptr, pva, pte), (ntr, nva, nte) = split(pos), split(neg)
             tr, va, te = np.r_[ptr, ntr], np.r_[pva, nva], np.r_[pte, nte]
+            self._split = {"X": X, "y": y, "tr": tr, "va": va, "te": te}
             self.model = GAT(len(FEATURES), hidden=8, heads=4)
             hist = self.model.fit(X, mask, y, tr, va, epochs=epochs)
             P = self.model.predict_proba(X, mask)
@@ -399,7 +400,7 @@ class Twin:
                 "id": self._next("O"), "account": account, "merchant": merchant, "amount": round(amount, 2),
                 "ts": self.clock, "device": device, "ip": ip, "ip_country": self.ips[ip],
                 "status": {"approve": "approved", "review": "review", "block": "blocked"}[decision],
-                "risk": s["risk"], "gat_risk": s["gat_risk"], "decision": decision,
+                "risk": s["risk"], "gat_risk": s["gat_risk"], "txn_score": s["txn_score"], "decision": decision,
                 "fraud": acc.fraud if fraud is None else fraud, "source": source,
                 "paypal_order_id": paypal_order_id, "factors": s["factors"], "new_device": new_device, "spend_ratio": s["spend_ratio"],
                 "items": items or [], "new_device_flag": new_device,
@@ -483,6 +484,91 @@ class Twin:
         merged = {**self.policy, **policy}
         return {"orders_replayed": len(scored), "attack_orders": len(extra_orders or []), "current": run(self.policy), "proposed": run(merged),
                 "current_policy": self.policy, "proposed_policy": merged}
+
+    # ------------------------------------------------- rules vs graph
+    def compare_engines(self, extra_orders=None, hardened_policy=None, last_n=400, review_cost=4.0):
+        """Replay the same orders through (a) rules only, (b) GAT + rules, (c) GAT + rules under a hardened policy.
+
+        Only orders scored live (with a stored rules score) are used, so every engine sees identical inputs.
+        "Intercepted" = blocked or sent to review; blocked and reviewed fraud dollars are reported separately.
+        """
+        recent = [o for o in self.orders if o.get("txn_score") is not None][-last_n:]
+        orders = recent + [o for o in (extra_orders or []) if o.get("txn_score") is not None]
+        engines = {
+            "rules_only": (lambda o: o["txn_score"], dict(DEFAULT_POLICY)),  # rules at full 0-1 scale: the fairest baseline
+            "gat_rules": (lambda o: o["risk"], dict(DEFAULT_POLICY)),
+        }
+        if hardened_policy:
+            engines["gat_rules_hardened"] = (lambda o: o["risk"], {**DEFAULT_POLICY, **hardened_policy})
+
+        def kind(o):
+            return o.get("attack") or ("live fraud traffic" if o["fraud"] else None)
+
+        out = {"orders": len(orders), "attack_orders": len(orders) - len(recent), "review_cost_usd": review_cost,
+               "engines": {}, "by_attack": {}}
+        for name, (score, pol) in engines.items():
+            m = {"fraud_total_usd": 0.0, "fraud_blocked_usd": 0.0, "fraud_reviewed_usd": 0.0, "fraud_missed_usd": 0.0,
+                 "good_total": 0, "good_reviewed": 0, "good_blocked": 0, "good_blocked_usd": 0.0}
+            per = {}
+            for o in orders:
+                d = self.decide(score(o), o["amount"], o.get("new_device", False), pol, o.get("spend_ratio", 0))
+                if o["fraud"]:
+                    m["fraud_total_usd"] += o["amount"]
+                    key = {"block": "fraud_blocked_usd", "review": "fraud_reviewed_usd", "approve": "fraud_missed_usd"}[d]
+                    m[key] += o["amount"]
+                    k = kind(o)
+                    pk = per.setdefault(k, {"total_usd": 0.0, "intercepted_usd": 0.0})
+                    pk["total_usd"] += o["amount"]
+                    if d != "approve":
+                        pk["intercepted_usd"] += o["amount"]
+                else:
+                    m["good_total"] += 1
+                    if d == "review":
+                        m["good_reviewed"] += 1
+                    elif d == "block":
+                        m["good_blocked"] += 1
+                        m["good_blocked_usd"] += o["amount"]
+            m = {k: (round(v, 2) if isinstance(v, float) else v) for k, v in m.items()}
+            m["fraud_intercepted_usd"] = round(m["fraud_blocked_usd"] + m["fraud_reviewed_usd"], 2)
+            m["intercept_rate"] = round(m["fraud_intercepted_usd"] / max(m["fraud_total_usd"], 1), 3)
+            m["false_positive_cost_usd"] = round(m["good_blocked_usd"] + review_cost * m["good_reviewed"], 2)
+            out["engines"][name] = m
+            for k, v in per.items():
+                out["by_attack"].setdefault(k, {"total_usd": round(v["total_usd"], 2)})[name] = round(
+                    v["intercepted_usd"] / max(v["total_usd"], 1e-9), 3)
+        # the honest headline: red-team attack orders only (fresh accounts the GAT never saw a label for)
+        unseen = {}
+        for name, (score, pol) in engines.items():
+            tot = icp = 0.0
+            for o in orders:
+                if o.get("attack") and o["fraud"]:
+                    tot += o["amount"]
+                    if self.decide(score(o), o["amount"], o.get("new_device", False), pol,
+                                   o.get("spend_ratio", 0)) != "approve":
+                        icp += o["amount"]
+            unseen[name] = {"total_usd": round(tot, 2), "intercepted_usd": round(icp, 2),
+                            "intercept_rate": round(icp / max(tot, 1e-9), 3)}
+        out["unseen_attacks"] = unseen
+        out["account_auc"] = self.account_auc()
+        return out
+
+    def account_auc(self):
+        """Held-out account AUC: the same node features with no graph (logistic regression) vs the GAT."""
+        sp = getattr(self, "_split", None)
+        if not sp or self.model is None:
+            return None
+        X, y, tr, te = sp["X"], sp["y"], sp["tr"], sp["te"]
+        mu, sd = X[tr].mean(0), X[tr].std(0) + 1e-6
+        Z = (X - mu) / sd
+        w, b = np.zeros(X.shape[1]), 0.0
+        for _ in range(800):  # plain logistic regression, L2, gradient descent
+            p = 1 / (1 + np.exp(-(Z[tr] @ w + b)))
+            g = p - y[tr]
+            w -= 0.1 * (Z[tr].T @ g / len(tr) + 1e-3 * w)
+            b -= 0.1 * g.mean()
+        rules_p = 1 / (1 + np.exp(-(Z[te] @ w + b)))
+        return {"test_accounts": int(len(te)), "features_only_no_graph": round(float(auc(y[te], rules_p)), 4),
+                "gat": self.metrics.get("test_auc")}
 
     # ------------------------------------------------------ investigation
     def linked_accounts(self, account, hops=2):

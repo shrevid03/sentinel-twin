@@ -28,3 +28,17 @@ def test_same_seed_replays_identical_attack():
     a = run_attack(twin, "synthetic_identity", {"warmup_orders": 8, "bust_amount": 250}, seed=11)
     b = run_attack(twin, "synthetic_identity", {"warmup_orders": 8, "bust_amount": 250}, seed=11)
     assert [o["amount"] for o in a["orders"]] == [o["amount"] for o in b["orders"]]
+
+
+def test_compare_engines_on_identical_orders():
+    twin = _twin()
+    res = defense_drill(twin, seed=7)
+    c = res["compare"]
+    assert set(c["engines"]) == {"rules_only", "gat_rules", "gat_rules_hardened"}
+    totals = {e["fraud_total_usd"] for e in c["engines"].values()}
+    assert len(totals) == 1  # every engine saw the same orders
+    for e in c["engines"].values():
+        assert abs(e["fraud_intercepted_usd"] + e["fraud_missed_usd"] - e["fraud_total_usd"]) < 0.05
+    u = c["unseen_attacks"]
+    assert u["gat_rules_hardened"]["intercepted_usd"] >= u["gat_rules"]["intercepted_usd"]
+    assert c["account_auc"]["test_accounts"] > 0
