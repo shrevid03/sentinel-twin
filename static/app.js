@@ -620,6 +620,8 @@ function refresh() { loadStats(); loadFeed(); }
   $("#lang").onchange = setChips; setChips();
   addMsg("bot", "Namaste! I'm Sentinel. I can shop for you and pay with PayPal, explain the twin, investigate fraud, or unleash the red team. Pick a language and type or tap the mic.");
   renderAttacks(); loadMandate(); refresh(); loadGraph();
+  const h = location.hash.slice(1);  // deep links from the landing page, e.g. /app#concierge
+  if (h && document.getElementById("tab-" + h)) showTab(h);
   setInterval(refresh, 4000);
   setInterval(() => document.querySelector("#tab-command.active") && refreshGraphColors(), 30000);
 })();

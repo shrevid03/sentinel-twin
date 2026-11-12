@@ -152,7 +152,7 @@ cp .env.example .env        # optional: add keys (see below)
 uvicorn app.main:app --reload --port 8000
 ```
 
-Open http://localhost:8000. Startup takes about 8 seconds while the GAT trains on the twin.
+Open http://localhost:8000 and click **Launch live demo** (the app itself is at http://localhost:8000/app; `/app#drill`, `/app#concierge` and so on open a tab directly). Startup takes about 8 seconds while the GAT trains on the twin.
 
 With no keys you get demo mode for PayPal and the AI. Everything works and is labelled in the header.
 
