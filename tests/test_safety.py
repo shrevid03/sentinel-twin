@@ -90,3 +90,21 @@ def test_unverified_webhook_changes_nothing(monkeypatch):
         r = client.post("/api/paypal/webhook", json=ev)
         assert r.status_code == 200 and r.json()["processed"] is False
     assert order["fraud"] is False and order["status"] == "captured"
+
+
+def test_every_agent_checkout_gets_a_receipt(team):
+    oid = _approved_checkout(team)
+    co = team.checkouts[oid]
+    rc = team.receipts[co["receipt_id"]]
+    assert rc["outcome"] == "paypal_order_created" and rc["paypal"]["order_id"] == oid
+    assert all(c["pass"] for c in rc["mandate_checks"])
+    assert rc["risk"]["policy_version"]["hash"] and rc["risk"]["decision"] == "approve"
+    team.capture(oid)
+    assert rc["paypal"]["status"] == "COMPLETED" and rc["paypal"]["capture_id"]
+    team.twin.policy = {**team.twin.policy, "review_threshold": 0.0, "block_threshold": 1.01}
+    held = team.guarded_checkout(CART)
+    hr = team.receipts[held["receipt_id"]]
+    assert hr["outcome"] == "held_for_review" and hr["paypal"] is None and hr["review"]["status"] == "pending"
+    rejected = team.guarded_checkout([{"sku": "SKU-GFT-02", "qty": 5}])
+    rr = team.receipts[rejected["receipt_id"]]
+    assert rr["outcome"] == "rejected_by_mandate_guard" and not all(c["pass"] for c in rr["mandate_checks"])

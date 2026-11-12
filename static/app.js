@@ -121,6 +121,7 @@ async function sendChat(text) {
     addMsg("bot", esc(r.reply));
     renderTrace($("#trace"), r.trace);
     if (r.checkout) renderPay(r.checkout);
+    if (r.receipt_id) addMsg("sys", `<a href="#" class="rcpt-link" data-rcpt="${esc(r.receipt_id)}">Why? (decision receipt ${esc(r.receipt_id)})</a>`);
     if (r.case) renderCases();
     if (r.redteam) renderRun(r.redteam, r.trace);
     speak(r.reply);
@@ -327,6 +328,7 @@ async function loadLedger() {
   const coRows = cos.map((c) => ({ ...c, items: c.cart.map((x) => x.name).join(", "),
     data: String(c.paypal_order_id).startsWith("DEMO-") ? "Demo mode" : "Real PayPal sandbox" }));
   if (!coGrid) coGrid = agGrid.createGrid($("#co-grid"), { rowData: coRows, columnDefs: [{ field: "paypal_order_id" },
+    { field: "receipt_id", headerName: "Receipt", width: 130, cellRenderer: (p) => p.value ? `<a href="#" class="rcpt-link" data-rcpt="${esc(p.value)}">${esc(p.value)}</a>` : "" },
     { field: "data", headerName: "Source", width: 150, cellStyle: (p) => ({ color: p.value === "Real PayPal sandbox" ? "#2ecc8f" : "#ffb547", fontWeight: 600 }) }, { field: "total", width: 90 }, { field: "status", width: 120 }, { field: "risk", width: 80 }, { field: "items", flex: 1 }] });
   else coGrid.setGridOption("rowData", coRows);
   if (!apiGrid) apiGrid = agGrid.createGrid($("#api-grid"), { rowData: calls, columnDefs: [{ field: "t", width: 90 }, { field: "method", width: 85 }, { field: "path", flex: 1 }, { field: "status", width: 85 }, { field: "mode", width: 95 }] });

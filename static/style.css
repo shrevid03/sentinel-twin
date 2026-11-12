@@ -74,6 +74,13 @@ code{font-size:11.5px;color:#b9c6e4;word-break:break-word}
 .attack .params{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted);margin-bottom:8px}
 .report{white-space:normal;max-height:360px;overflow:auto}
 .explain li{margin-bottom:8px}
+/* receipt modal */
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow:auto}
+.modal[hidden]{display:none}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;max-width:760px;width:100%}
+.rc-sec{margin:12px 0}.rc-sec h4{margin:0 0 6px;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.pass{color:var(--ok);font-weight:600}.fail{color:var(--bad);font-weight:600}
+a.rcpt-link{color:var(--blue2)}
 /* defense drill */
 .tag.synth{border-color:var(--warn);color:var(--warn)}
 button.big{font-size:16px;padding:12px 22px}

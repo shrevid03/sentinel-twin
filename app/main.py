@@ -293,6 +293,23 @@ def capture(order_id: str):
             "duplicate": bool(res.get("duplicate"))}
 
 
+@app.get("/api/receipts")
+def receipts():
+    return list(team.receipts.values())[::-1]
+
+
+@app.get("/api/receipts/{receipt_id}")
+def receipt(receipt_id: str):
+    """A decision receipt by receipt id, PayPal order id or hold id."""
+    r = team.receipts.get(receipt_id)
+    if not r:
+        co = team.checkouts.get(receipt_id) or team.holds.get(receipt_id)
+        r = team.receipts.get((co or {}).get("receipt_id"))
+    if not r:
+        raise HTTPException(404, "unknown receipt")
+    return r
+
+
 @app.get("/api/paypal/calls")
 def paypal_calls():
     return paypal.calls[::-1]

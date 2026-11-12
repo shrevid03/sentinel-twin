@@ -210,6 +210,8 @@ class Team:
         self.cases: list[dict] = []
         self.redteam_runs: list[dict] = []
         self.checkouts: dict[str, dict] = {}
+        self.receipts: dict[str, dict] = {}
+        self.holds: dict[str, dict] = {}
         self._capture_lock = threading.Lock()
         self.last_attack_orders: list[dict] = []
         acc = twin.new_account(name="Demo Buyer", country="IN", age_days=900, kyc=True)
@@ -247,12 +249,32 @@ class Team:
                                "note": {"type": "string"}}, ["items"]), "fn": checkout},
         }
 
+    # ---------------------------------------------------------- receipts
+    def _new_receipt(self, cart, total):
+        import uuid
+        rid = "RCPT-" + uuid.uuid4().hex[:8].upper()
+        m = self.mandate
+        r = {"id": rid, "created_at": time.strftime("%Y-%m-%d %H:%M:%S"), "buyer": self.buyer,
+             "cart": [{"sku": c["sku"], "name": c["name"], "qty": c["qty"], "price": c["price"],
+                       "category": c["category"]} for c in cart], "total": total,
+             "mandate": {"per_order_limit": m["per_order_limit"], "monthly_budget": m["monthly_budget"],
+                         "spent": m["spent"], "remaining": round(m["monthly_budget"] - m["spent"], 2),
+                         "blocked_categories": list(m["blocked_categories"])},
+             "mandate_checks": [], "risk": None, "outcome": None, "paypal": None, "review": None, "timeline": []}
+        self.receipts[rid] = r
+        return r
+
+    @staticmethod
+    def _stamp(receipt, event):
+        receipt["timeline"].append({"at": time.strftime("%H:%M:%S"), "event": event})
+
     def guarded_checkout(self, items, note="", dry_run=False, log=None):
-        cart, problems = [], []
+        cart, problems, unknown = [], [], []
         for it in items or []:
             p = catalog.by_sku(str(it.get("sku")))
             if not p:
                 problems.append(f"unknown sku {it.get('sku')}")
+                unknown.append(str(it.get("sku")))
                 continue
             qty = max(1, min(int(it.get("qty", 1) or 1), 10))
             cart.append({**p, "qty": qty})
@@ -268,25 +290,59 @@ class Team:
             log.append({"total": total, "cart": [c["sku"] for c in cart], "blocked": bool(problems)})
         if not cart:
             return {"status": "rejected", "reasons": problems or ["empty cart"]}
-        if problems:
-            self.twin._event("guard", f"Mandate guard rejected agent checkout ${total}: {problems[0]}", level="bad")
-            return {"status": "rejected_by_mandate_guard", "total": total, "reasons": problems}
-        if dry_run:
+        if dry_run:  # red-team probe on a fork: no receipt, nothing real happens
+            if problems:
+                return {"status": "rejected_by_mandate_guard", "total": total, "reasons": problems}
             return {"status": "would_create_order", "total": total}
+        rc = self._new_receipt(cart, total)
+        blocked_cats = sorted({c["category"] for c in cart if c["category"] in self.mandate["blocked_categories"]})
+        rc["mandate_checks"] = [
+            {"check": "all items exist in the catalog", "pass": not unknown,
+             "detail": ", ".join(unknown) or "ok"},
+            {"check": "no blocked categories", "pass": not blocked_cats, "detail": ", ".join(blocked_cats) or "none"},
+            {"check": f"total <= per-order limit ${self.mandate['per_order_limit']:.2f}",
+             "pass": total <= self.mandate["per_order_limit"], "detail": f"total ${total:.2f}"},
+            {"check": f"total <= remaining monthly budget ${remaining:.2f}", "pass": total <= remaining,
+             "detail": f"total ${total:.2f}"},
+        ]
+        self._stamp(rc, "mandate checked in code")
+        if problems:
+            rc["outcome"] = "rejected_by_mandate_guard"
+            self._stamp(rc, "rejected by the mandate guard; no PayPal order")
+            self.twin._event("guard", f"Mandate guard rejected agent checkout ${total}: {problems[0]}", level="bad")
+            return {"status": "rejected_by_mandate_guard", "total": total, "reasons": problems, "receipt_id": rc["id"]}
         merchant = cart[0]["merchant"]
         acc = self.twin.accounts[self.buyer]
         score = self.twin.score_order(self.buyer, merchant, total, next(iter(acc.devices)), next(iter(acc.ips)))
         decision = self.twin.decide(score["risk"], total, False)
+        rc["risk"] = {"score": score["risk"], "gat_part": score["gat_risk"], "rules_part": score["txn_score"],
+                      "device_risk": score.get("device_risk"), "factors": score["factors"], "decision": decision,
+                      "policy_version": self.twin.policy_version()}
+        self._stamp(rc, f"risk engine decision: {decision} (risk {score['risk']:.2f})")
         if decision == "block":
+            rc["outcome"] = "blocked_by_risk_engine"
+            self._stamp(rc, "blocked; no PayPal order")
             self.twin._event("guard", f"Risk engine blocked agent checkout ${total} (risk {score['risk']:.2f})",
                              level="bad")
-            return {"status": "blocked_by_risk_engine", "risk": score["risk"], "factors": score["factors"]}
+            return {"status": "blocked_by_risk_engine", "risk": score["risk"], "factors": score["factors"],
+                    "receipt_id": rc["id"]}
         if decision == "review":
             # a review decision is not permission to pay: no PayPal order is created until a human clears it
+            hid = "HOLD-" + rc["id"][5:]
+            self.holds[hid] = {"id": hid, "receipt_id": rc["id"], "cart": cart, "merchant": merchant, "total": total,
+                               "risk": score["risk"], "factors": score["factors"], "status": "pending",
+                               "created_at": rc["created_at"]}
+            rc["outcome"] = "held_for_review"
+            rc["review"] = {"hold_id": hid, "status": "pending"}
+            self._stamp(rc, f"held for manual review as {hid}; no PayPal order yet")
             self.twin._event("guard", f"Agent checkout ${total} held for manual review (risk {score['risk']:.2f}); "
                                       "no PayPal order created", level="warn")
-            return {"status": "held_for_review", "total": total, "risk": score["risk"], "factors": score["factors"],
+            return {"status": "held_for_review", "hold_id": hid, "total": total, "risk": score["risk"],
+                    "factors": score["factors"], "receipt_id": rc["id"],
                     "message": "This order needs a human review before any PayPal payment is started."}
+        return self._create_paypal_order(cart, merchant, total, score["risk"], rc)
+
+    def _create_paypal_order(self, cart, merchant, total, risk, rc):
         ref = f"twin-{int(time.time())}"
         order = self.pp.create_order([{"name": c["name"], "price": c["price"], "qty": c["qty"], "sku": c["sku"]}
                                       for c in cart], ref)
@@ -294,11 +350,16 @@ class Team:
                                    items=[c["sku"] for c in cart])
         tw["status"] = "awaiting_payment"
         self.checkouts[order["id"]] = {"paypal_order_id": order["id"], "twin_order": tw["id"], "total": total,
-                                       "cart": cart, "risk": score["risk"], "status": order.get("status"),
+                                       "cart": cart, "risk": risk, "status": order.get("status"),
+                                       "receipt_id": rc["id"],
                                        "approve_url": next((l["href"] for l in order.get("links", [])
                                                             if l["rel"] in ("approve", "payer-action")), None)}
+        rc["outcome"] = "paypal_order_created"
+        rc["paypal"] = {"mode": self.pp.mode, "order_id": order["id"], "status": order.get("status"),
+                        "approval": "awaiting buyer approval", "capture_id": None, "twin_order": tw["id"]}
+        self._stamp(rc, f"PayPal order {order['id']} created ({self.pp.mode}); awaiting buyer approval")
         return {"status": "awaiting_buyer_approval", "paypal_order_id": order["id"], "total": total,
-                "risk": score["risk"], "paypal_mode": self.pp.mode,
+                "risk": risk, "paypal_mode": self.pp.mode, "receipt_id": rc["id"],
                 "message": "The buyer must approve this payment with the PayPal button shown in the chat."}
 
     def capture(self, order_id):
@@ -314,11 +375,17 @@ class Team:
             if co["total"] > self.mandate["per_order_limit"] or co["total"] > remaining:
                 self.twin._event("guard", f"Capture of {order_id} (${co['total']}) refused: mandate exceeded at "
                                           "capture time", level="bad")
+                if self.receipts.get(co.get("receipt_id")):
+                    self._stamp(self.receipts[co["receipt_id"]], "capture refused: mandate exceeded at capture time")
                 raise CaptureRefused(409, f"capture refused: ${co['total']} exceeds the buyer's mandate "
                                           f"(remaining ${remaining:.2f})")
             res = self.pp.capture_order(order_id)
+            rc = self.receipts.get(co.get("receipt_id"))
             if res.get("status") == "COMPLETED":
                 co["status"] = "COMPLETED"
+                if rc:
+                    rc["paypal"].update(status="COMPLETED", approval="approved by buyer", capture_id=_capture_id(res))
+                    self._stamp(rc, f"buyer approved; PayPal capture COMPLETED ({_capture_id(res)})")
                 self.mandate["spent"] = round(self.mandate["spent"] + co["total"], 2)
                 for o in self.twin.orders:
                     if o["id"] == co["twin_order"]:
@@ -645,8 +712,11 @@ class Team:
         else:
             reply = self._demo_concierge(text, lang, tools, trace)
         for t in trace:
-            if t.get("tool") == "checkout" and isinstance(t.get("output"), dict) and t["output"].get("paypal_order_id"):
-                out["checkout"] = self.checkouts.get(t["output"]["paypal_order_id"])
+            if t.get("tool") == "checkout" and isinstance(t.get("output"), dict):
+                if t["output"].get("paypal_order_id"):
+                    out["checkout"] = self.checkouts.get(t["output"]["paypal_order_id"])
+                if t["output"].get("receipt_id"):
+                    out["receipt_id"] = t["output"]["receipt_id"]
         out["reply"] = reply
         return out
 

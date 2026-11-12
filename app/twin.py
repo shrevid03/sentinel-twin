@@ -10,9 +10,12 @@ real state.
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import math
 import random
 import threading
+import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -108,6 +111,21 @@ class Twin:
         return acc
 
     # ------------------------------------------------------- initial world
+    # ------------------------------------------------------ policy version
+    @property
+    def policy(self):
+        return self._policy
+
+    @policy.setter
+    def policy(self, value):
+        self._policy = dict(value)
+        self._policy_applied_at = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    def policy_version(self):
+        """Short content hash of the live decision policy plus when it was applied (for receipts)."""
+        h = hashlib.sha256(json.dumps(self._policy, sort_keys=True).encode()).hexdigest()[:8]
+        return {"hash": h, "applied_at": getattr(self, "_policy_applied_at", None), "policy": dict(self._policy)}
+
     def _populate(self):
         r = self.rng
         cafe_ips = [self.new_ip("US"), self.new_ip("GB")]  # shared public wifi: hard negatives
