@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel Twin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230070e0'/><circle cx='16' cy='16' r='6' fill='%23ffd140'/></svg>">
+<link rel="stylesheet" href="/static/vendor/ag-grid.css">
+<link rel="stylesheet" href="/static/vendor/ag-theme-quartz.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo"></span><div><b>Sentinel Twin</b><small>Digital twin of your PayPal business, defended by AI agents</small></div></div>
+  <div class="badges">
+    <span id="b-paypal" class="badge">PayPal …</span>
+    <span id="b-brain" class="badge">Brain …</span>
+    <label class="toggle"><input type="checkbox" id="auto"> Live traffic</label>
+  </div>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-tab="command" class="active">Command center</button>
+  <button data-tab="concierge">Concierge · chat &amp; voice</button>
+  <button data-tab="investigator">Investigator</button>
+  <button data-tab="redteam">Red team</button>
+  <button data-tab="whatif">What-if simulator</button>
+  <button data-tab="ledger">Ledger</button>
+  <button data-tab="model">GAT model</button>
+</nav>
+<main>
+<!-- COMMAND CENTER -->
+<section id="tab-command" class="tab active">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid2">
+    <div class="card graphcard">
+      <div class="cardhead"><h3>The twin: accounts, devices and IPs, coloured by GAT risk</h3>
+        <div><button class="ghost" id="btn-burst">Simulate traffic burst</button> <button class="ghost" id="btn-reset-graph">Full view</button></div></div>
+      <div id="graph"></div>
+      <div class="legend"><span><i class="dot acc"></i>account</span><span><i class="dot dev"></i>device</span><span><i class="dot ip"></i>IP</span><span><i class="dot hot"></i>high risk</span><span><i class="dot frozen"></i>frozen</span></div>
+    </div>
+    <div class="side">
+      <div class="card" id="explain-card"><h3>Why is it risky?</h3><p class="muted">Click any node in the twin to see which neighbours the graph attention heads focused on.</p></div>
+      <div class="card feedcard"><h3>Live event feed</h3><ul id="feed"></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONCIERGE -->
+<section id="tab-concierge" class="tab">
+  <div class="grid2">
+    <div class="card chat">
+      <div class="cardhead"><h3>Talk to Sentinel</h3>
+        <div class="row"><select id="lang"></select>
+        <label class="toggle"><input type="checkbox" id="speak" checked> Speak replies</label></div></div>
+      <div id="messages"></div>
+      <div id="paypal-slot"></div>
+      <div class="composer">
+        <button id="mic" class="mic" title="Hold to talk">🎙</button>
+        <input id="msg" placeholder="Try: buy a gift for a coffee lover under $40 · or · investigate the riskiest account · or · run the red team">
+        <button id="send">Send</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="side">
+      <div class="card"><h3>Spending mandate <small class="muted">enforced in code, not by the model</small></h3>
+        <div class="form">
+          <label>Per-order limit $<input type="number" id="m-order"></label>
+          <label>Monthly budget $<input type="number" id="m-budget"></label>
+          <label>Blocked categories<input id="m-blocked"></label>
+          <div class="row"><button id="m-save" class="ghost">Save mandate</button><span id="m-spent" class="muted"></span></div>
+        </div>
+      </div>
+      <div class="card"><h3>Agent trace</h3><ol id="trace" class="trace"></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- INVESTIGATOR -->
+<section id="tab-investigator" class="tab">
+  <div class="grid2">
+    <div class="card"><div class="cardhead"><h3>Accounts ranked by GAT risk</h3>
+      <button id="btn-investigate-top">Investigate riskiest</button></div>
+      <div id="acc-grid" class="ag-theme-quartz-dark gridbox"></div></div>
+    <div class="side">
+      <div class="card"><h3>Case reports</h3><div id="cases"></div></div>
+      <div class="card"><h3>Investigator trace</h3><ol id="inv-trace" class="trace"></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- RED TEAM -->
+<section id="tab-redteam" class="tab">
+  <div class="card"><div class="cardhead"><h3>Adaptive red team</h3>
+    <div><button id="btn-campaign">Launch adaptive campaign</button></div></div>
+    <p class="muted">The red team attacks a sandboxed fork of the twin, watches what got caught, then changes tactics to evade. Nothing touches live state.</p>
+    <div class="kpis" id="rt-score"></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Attack playbooks <small class="muted">tune and fire one by hand</small></h3><div id="attacks" class="attacks"></div>
+      <h3>Results</h3><div id="rt-grid" class="ag-theme-quartz-dark gridbox small"></div></div>
+    <div class="side">
+      <div class="card"><h3>Red team report</h3><div id="rt-report" class="report muted">No campaign yet.</div>
+        <button class="ghost" id="btn-to-whatif">Test a hardened policy in the what-if simulator →</button></div>
+      <div class="card"><h3>Red team trace</h3><ol id="rt-trace" class="trace"></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IF -->
+<section id="tab-whatif" class="tab">
+  <div class="grid2">
+    <div class="card"><h3>Policy under test</h3>
+      <div class="form" id="policy-form"></div>
+      <label class="toggle"><input type="checkbox" id="wi-rt" checked> Include the latest red-team attack traffic</label>
+      <div class="row"><button id="btn-whatif">Run simulation on the twin</button><button class="ghost" id="btn-apply">Apply to live policy</button></div>
+      <p class="muted" id="wi-note"></p>
+    </div>
+    <div class="card"><h3>Current vs proposed policy</h3><canvas id="wi-chart" height="220"></canvas><div class="kpis" id="wi-kpis"></div></div>
+  </div>
+</section>
+
+<!-- LEDGER -->
+<section id="tab-ledger" class="tab">
+  <div class="card"><div class="cardhead"><h3>Orders mirrored in the twin</h3><input id="ord-filter" placeholder="Filter…"></div>
+    <div id="ord-grid" class="ag-theme-quartz-dark gridbox tall"></div></div>
+  <div class="grid2">
+    <div class="card"><h3>PayPal checkouts created by the agent</h3><div id="co-grid" class="ag-theme-quartz-dark gridbox small"></div></div>
+    <div class="card"><h3>PayPal API calls</h3><div id="api-grid" class="ag-theme-quartz-dark gridbox small"></div></div>
+  </div>
+</section>
+
+<!-- MODEL -->
+<section id="tab-model" class="tab">
+  <div class="grid2">
+    <div class="card"><div class="cardhead"><h3>Graph attention network</h3><button class="ghost" id="btn-retrain">Retrain on the live twin</button></div>
+      <div class="kpis" id="model-kpis"></div>
+      <canvas id="train-chart" height="200"></canvas></div>
+    <div class="card"><h3>How it works</h3>
+      <ol class="explain">
+        <li><b>Mirror.</b> Every buyer, device, IP and merchant becomes a node. Orders from PayPal checkout and webhooks add edges, so the twin is always a copy of the live business.</li>
+        <li><b>Attend.</b> A 2-layer GAT (4 attention heads, then 1) learns how much each neighbour matters. A new account sharing a device with a known ring lights up even if it looks clean on its own.</li>
+        <li><b>Decide.</b> GAT risk is combined with transaction signals (new device, geo mismatch, spend spike, velocity) into approve, review or block before the PayPal order is created.</li>
+        <li><b>Attack.</b> The red team forks the twin and adapts attacks until something gets through.</li>
+        <li><b>Rehearse.</b> The what-if simulator replays traffic and attacks under a proposed policy, so you change the real one with evidence.</li>
+      </ol>
+      <p class="muted">Written from scratch in NumPy with hand-derived backprop; tests check every gradient against finite differences.</p>
+    </div>
+  </div>
+</section>
+</main>
+<script src="/static/vendor/vis-network.min.js"></script>
+<script src="/static/vendor/ag-grid-community.min.js"></script>
+<script src="/static/vendor/chart.umd.min.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
