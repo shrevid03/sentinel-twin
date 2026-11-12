@@ -69,12 +69,12 @@ async function runDrill() {
     ].join("");
     $("#ds-4").classList.add("show");  // show before drawing so Chart.js can measure the canvas
     const data = { labels: ["Attack $ that got through", "False-positive cost $"], datasets: [
-      { label: "Before", data: [s.breach_evaded_before_usd, s.fp_cost_before_usd], backgroundColor: "#ff5d6c" },
-      { label: "After", data: [s.breach_evaded_after_usd ?? 0, s.fp_cost_after_usd ?? 0], backgroundColor: "#2ecc8f" }] };
+      { label: "Before", data: [s.breach_evaded_before_usd, s.fp_cost_before_usd], backgroundColor: "#003087" },
+      { label: "After", data: [s.breach_evaded_after_usd ?? 0, s.fp_cost_after_usd ?? 0], backgroundColor: "#009CDE" }] };
     if (drillChart) { drillChart.data = data; drillChart.update(); } else {
       drillChart = new Chart($("#d-chart"), { type: "bar", data, options: {
-        plugins: { legend: { labels: { color: "#cdd6ee" } } },
-        scales: { x: { ticks: { color: "#93a0bd" } }, y: { ticks: { color: "#93a0bd" }, grid: { color: "#24304f" } } } } });
+        plugins: { legend: { labels: { color: "#001435" } } },
+        scales: { x: { ticks: { color: "#5B6B82" } }, y: { ticks: { color: "#5B6B82" }, grid: { color: "#E3E8EF" } } } } });
     }
     drillChart.resize();
     await sleep(600);
@@ -103,11 +103,11 @@ function renderCompare(c) {
       <td class="n">${money(e.fraud_blocked_usd)} / ${money(e.fraud_reviewed_usd)}</td><td class="n">${e.good_reviewed} of ${e.good_total}</td>
       <td class="n">${money(e.good_blocked_usd)}</td><td class="n">${money(e.false_positive_cost_usd)}</td></tr>`; }).join("")}</table>`;
   const kinds = Object.keys(c.by_attack).filter((k) => k !== "live fraud traffic");
-  const colors = { rules_only: "#93a0bd", gat_rules: "#3d9bff", gat_rules_hardened: "#2ecc8f" };
+  const colors = { rules_only: "#B8C4D6", gat_rules: "#0070E0", gat_rules_hardened: "#003087" };
   const data = { labels: kinds.map((k) => ATTACK_LABEL[k] || k), datasets: names.map((n) => ({ label: ENGINE[n],
     data: kinds.map((k) => Math.round((c.by_attack[k][n] || 0) * 100)), backgroundColor: colors[n] })) };
-  const opts = { plugins: { legend: { labels: { color: "#cdd6ee" } } }, scales: { x: { ticks: { color: "#93a0bd" } },
-    y: { max: 100, ticks: { color: "#93a0bd", callback: (v) => v + "%" }, grid: { color: "#24304f" } } } };
+  const opts = { plugins: { legend: { labels: { color: "#001435" } } }, scales: { x: { ticks: { color: "#5B6B82" } },
+    y: { max: 100, ticks: { color: "#5B6B82", callback: (v) => v + "%" }, grid: { color: "#E3E8EF" } } } };
   $("#ds-5").classList.add("show");
   if (cmpChart) { cmpChart.data = data; cmpChart.update(); } else cmpChart = new Chart($("#d-cmp-chart"), { type: "bar", data, options: opts });
   cmpChart.resize();

@@ -15,6 +15,15 @@ const api = async (path, body, retried) => {
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const money = (n) => "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
 const md = (t) => DOMPurify.sanitize(marked.parse(t || ""));
+/* Chart.js defaults: light theme, blue/navy series, legends on */
+if (window.Chart) {
+  Chart.defaults.font.family = '"Plus Jakarta Sans", Inter, system-ui, sans-serif';
+  Chart.defaults.color = "#5B6B82"; Chart.defaults.borderColor = "#E3E8EF";
+  Chart.defaults.plugins.legend.display = true;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.elements.bar.borderRadius = 6;
+  Chart.defaults.elements.line.borderWidth = 2.5; Chart.defaults.elements.point.radius = 0;
+}
 let CFG = {};
 const session = "s-" + Math.random().toString(36).slice(2, 9);
 
@@ -47,14 +56,14 @@ const colorFor = (n) => {
   const base = n.type === "account" ? [61, 155, 255] : n.type === "device" ? [155, 140, 255] : [63, 208, 201];
   const hot = [255, 93, 108];
   const mix = base.map((c, i) => Math.round(c + (hot[i] - c) * Math.min(1, r * 1.1)));
-  return { background: `rgb(${mix})`, border: r > 0.5 ? "#ff5d6c" : "#1d2a4a" };
+  return { background: `rgb(${mix})`, border: r > 0.5 ? "#D93025" : "#1d2a4a" };
 };
 async function loadGraph(focus) {
   const g = await api("/api/graph" + (focus ? `?focus=${focus}` : ""));
   const nodes = g.nodes.map((n) => ({
     id: n.id, label: n.type === "account" ? n.label : "", title: `${n.id} · ${n.type} · risk ${n.risk}`,
     shape: n.type === "account" ? "dot" : n.type === "device" ? "square" : "triangle",
-    size: n.type === "account" ? 9 + 12 * n.risk : 6, color: colorFor(n), font: { color: "#cdd6ee", size: 10 }, raw: n,
+    size: n.type === "account" ? 9 + 12 * n.risk : 6, color: colorFor(n), font: { color: "#001435", size: 10 }, raw: n,
   }));
   if (!network) {
     nodesDS = new vis.DataSet(nodes); edgesDS = new vis.DataSet(g.edges.map((e, i) => ({ id: i, ...e, color: { color: "#2a3658" } })));
@@ -211,7 +220,7 @@ async function loadAccounts() {
       rowData: rows, pagination: true, paginationPageSize: 50,
       columnDefs: [
         { field: "id", width: 90, pinned: "left" }, { field: "name" },
-        { field: "risk", width: 110, sort: "desc", valueFormatter: (p) => p.value.toFixed(2), cellStyle: (p) => ({ color: p.value > 0.5 ? "#ff5d6c" : "#2ecc8f", fontWeight: 600 }) },
+        { field: "risk", width: 110, sort: "desc", valueFormatter: (p) => p.value.toFixed(2), cellStyle: (p) => ({ color: p.value > 0.5 ? "#D93025" : "#1E8E3E", fontWeight: 600 }) },
         { field: "status", width: 95 }, { field: "age_days", headerName: "Age (d)", width: 95 }, { field: "country", width: 90 },
         { field: "email_domain", headerName: "Email" }, { field: "devices", width: 90 }, { field: "ips", width: 75 },
         { field: "orders", width: 85 }, { field: "spend", valueFormatter: (p) => money(p.value), width: 100 },
@@ -263,7 +272,7 @@ function addResults(results, replace) {
     rtGrid = agGrid.createGrid($("#rt-grid"), { rowData: rows, columnDefs: [
       { field: "attack" }, { field: "params", flex: 1 }, { field: "fraud", valueFormatter: (p) => money(p.value), width: 100 },
       { field: "stopped", headerName: "Intercepted", headerTooltip: "blocked or sent to review", valueFormatter: (p) => money(p.value), width: 110 },
-      { field: "evaded", valueFormatter: (p) => money(p.value), width: 100, cellStyle: (p) => ({ color: p.value > 0 ? "#ff5d6c" : "#2ecc8f" }) },
+      { field: "evaded", valueFormatter: (p) => money(p.value), width: 100, cellStyle: (p) => ({ color: p.value > 0 ? "#D93025" : "#1E8E3E" }) },
       { field: "detection", headerName: "Intercept %", width: 110, valueFormatter: (p) => Math.round(p.value * 100) + "%" }, { field: "decided_by", headerName: "Decided by", width: 150 }, { field: "notes", headerName: "Why / notes", flex: 1, tooltipField: "notes" }],
       defaultColDef: { resizable: true, sortable: true } });
   } else if (replace) rtGrid.setGridOption("rowData", rows);
@@ -307,10 +316,10 @@ async function runWhatIf() {
   const r = await api("/api/whatif?include_redteam=" + $("#wi-rt").checked, getPolicy());
   const keys = [["fraud_blocked_usd", "Fraud blocked $"], ["fraud_reviewed_usd", "Fraud sent to review $"], ["fraud_missed_usd", "Fraud missed $"], ["good_blocked_usd", "Good orders blocked $"]];
   const data = { labels: keys.map((k) => k[1]), datasets: [
-    { label: "Current policy", data: keys.map((k) => r.current[k[0]]), backgroundColor: "#4b5878" },
-    { label: "Proposed policy", data: keys.map((k) => r.proposed[k[0]]), backgroundColor: "#3d9bff" }] };
+    { label: "Current policy", data: keys.map((k) => r.current[k[0]]), backgroundColor: "#003087" },
+    { label: "Proposed policy", data: keys.map((k) => r.proposed[k[0]]), backgroundColor: "#009CDE" }] };
   if (wiChart) { wiChart.data = data; wiChart.update(); } else wiChart = new Chart($("#wi-chart"), { type: "bar", data,
-    options: { plugins: { legend: { labels: { color: "#cdd6ee" } } }, scales: { x: { ticks: { color: "#93a0bd" } }, y: { ticks: { color: "#93a0bd" }, grid: { color: "#24304f" } } } } });
+    options: { plugins: { legend: { labels: { color: "#001435" } } }, scales: { x: { ticks: { color: "#5B6B82" } }, y: { ticks: { color: "#5B6B82" }, grid: { color: "#E3E8EF" } } } } });
   $("#wi-kpis").innerHTML = [kpi("intercept rate now", Math.round(r.current.catch_rate * 100) + "%"), kpi("intercept rate proposed", Math.round(r.proposed.catch_rate * 100) + "%", "ok"),
     kpi("good orders to review", `${r.current.good_reviewed} → ${r.proposed.good_reviewed}`, "warn"), kpi("orders replayed", r.orders_replayed)].join("");
   $("#wi-note").textContent = `Replayed ${r.orders_replayed} orders, including ${r.attack_orders} red-team attack orders.`;
@@ -322,7 +331,7 @@ $("#btn-apply").onclick = async () => { await api("/api/policy", getPolicy()); $
 let ordGrid, coGrid, apiGrid;
 async function loadLedger() {
   const [orders, cos, calls] = await Promise.all([api("/api/orders"), api("/api/checkouts"), api("/api/paypal/calls")]);
-  const dec = (p) => ({ color: p.value === "block" ? "#ff5d6c" : p.value === "review" ? "#ffb547" : "#2ecc8f", fontWeight: 600 });
+  const dec = (p) => ({ color: p.value === "block" ? "#D93025" : p.value === "review" ? "#B06000" : "#1E8E3E", fontWeight: 600 });
   if (!ordGrid) ordGrid = agGrid.createGrid($("#ord-grid"), { rowData: orders, pagination: true, paginationPageSize: 100,
     columnDefs: [{ field: "id", width: 120, pinned: "left" }, { field: "buyer" }, { field: "account", width: 90 }, { field: "merchant_name", headerName: "Merchant" },
       { field: "amount", width: 100, valueFormatter: (p) => "$" + p.value.toFixed(2) }, { field: "decision", width: 105, cellStyle: dec },
@@ -334,7 +343,7 @@ async function loadLedger() {
     data: String(c.paypal_order_id).startsWith("DEMO-") ? "Demo mode" : "Real PayPal sandbox" }));
   if (!coGrid) coGrid = agGrid.createGrid($("#co-grid"), { rowData: coRows, columnDefs: [{ field: "paypal_order_id" },
     { field: "receipt_id", headerName: "Receipt", width: 130, cellRenderer: (p) => p.value ? `<a href="#" class="rcpt-link" data-rcpt="${esc(p.value)}">${esc(p.value)}</a>` : "" },
-    { field: "data", headerName: "Source", width: 150, cellStyle: (p) => ({ color: p.value === "Real PayPal sandbox" ? "#2ecc8f" : "#ffb547", fontWeight: 600 }) }, { field: "total", width: 90 }, { field: "status", width: 120 }, { field: "risk", width: 80 }, { field: "items", flex: 1 }] });
+    { field: "data", headerName: "Source", width: 150, cellStyle: (p) => ({ color: p.value === "Real PayPal sandbox" ? "#1E8E3E" : "#B06000", fontWeight: 600 }) }, { field: "total", width: 90 }, { field: "status", width: 120 }, { field: "risk", width: 80 }, { field: "items", flex: 1 }] });
   else coGrid.setGridOption("rowData", coRows);
   if (!apiGrid) apiGrid = agGrid.createGrid($("#api-grid"), { rowData: calls, columnDefs: [{ field: "t", width: 90 }, { field: "method", width: 85 }, { field: "path", flex: 1 }, { field: "status", width: 85 }, { field: "mode", width: 95 }] });
   else apiGrid.setGridOption("rowData", calls);
@@ -348,10 +357,10 @@ async function loadModel() {
   $("#model-kpis").innerHTML = [kpi("test AUC", m.test_auc, "ok"), kpi("precision", m.precision), kpi("recall", m.recall),
     kpi("graph nodes", m.graph.nodes), kpi("edges", m.graph.edges), kpi("attention heads", `${m.heads} + 1`)].join("");
   const data = { labels: m.history.map((h) => h.epoch), datasets: [
-    { label: "training loss", data: m.history.map((h) => h.loss), borderColor: "#ff5d6c", yAxisID: "y" },
-    { label: "validation AUC", data: m.history.map((h) => h.val_auc), borderColor: "#2ecc8f", yAxisID: "y1" }] };
+    { label: "training loss", data: m.history.map((h) => h.loss), borderColor: "#003087", backgroundColor: "#003087", yAxisID: "y" },
+    { label: "validation AUC", data: m.history.map((h) => h.val_auc), borderColor: "#009CDE", backgroundColor: "#009CDE", yAxisID: "y1" }] };
   if (trainChart) { trainChart.data = data; trainChart.update(); } else trainChart = new Chart($("#train-chart"), { type: "line", data,
-    options: { plugins: { legend: { labels: { color: "#cdd6ee" } } }, scales: { x: { ticks: { color: "#93a0bd" } }, y: { ticks: { color: "#93a0bd" } }, y1: { position: "right", min: 0.4, max: 1, ticks: { color: "#93a0bd" } } } } });
+    options: { plugins: { legend: { labels: { color: "#001435" } } }, scales: { x: { ticks: { color: "#5B6B82" } }, y: { ticks: { color: "#5B6B82" } }, y1: { position: "right", min: 0.4, max: 1, ticks: { color: "#5B6B82" } } } } });
 }
 $("#btn-retrain").onclick = async (e) => { e.target.disabled = true; await api("/api/model/retrain", {}); e.target.disabled = false; loadModel(); refresh(); };
 
