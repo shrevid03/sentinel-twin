@@ -74,4 +74,20 @@ code{font-size:11.5px;color:#b9c6e4;word-break:break-word}
 .attack .params{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted);margin-bottom:8px}
 .report{white-space:normal;max-height:360px;overflow:auto}
 .explain li{margin-bottom:8px}
+/* defense drill */
+button.big{font-size:16px;padding:12px 22px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.drill-step{display:none}.drill-step.show{display:block;animation:rise .35s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--blue2);border-radius:50%;animation:rot .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.dtable{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.dtable th{color:var(--muted);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.dtable td{padding:6px 8px;border-bottom:1px solid var(--line)}
+.dtable td.n,.dtable th.n{text-align:right}
+.dtable tr.breach td{background:#ff5d6c14}.dtable tr.breach td.ev{color:var(--bad);font-weight:600}
+.dtable tr.chosen td{background:#2ecc8f14}.dtable tr.chosen td:first-child{box-shadow:inset 3px 0 var(--ok)}
+.dtable .ok{color:var(--ok);font-weight:600}.dtable .bad{color:var(--bad);font-weight:600}
+.kpis.big .kpi b{font-size:26px}.kpis.big .kpi small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.drill-chart{max-width:640px;margin:6px 0 10px}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}#graph{height:380px}.top{flex-direction:column;align-items:flex-start;gap:8px}}

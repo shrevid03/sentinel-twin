@@ -1,0 +1,30 @@
+"""The defense drill finds a breach, picks a safer policy within the false-positive budget, and proves it."""
+from app.drill import MAX_LEGIT_REVIEW_RATE, defense_drill
+from app.redteam import run_attack
+from app.twin import Twin
+
+
+def _twin():
+    twin = Twin(seed=3)
+    twin.train(epochs=60)
+    for _ in range(40):
+        twin.tick()
+    return twin
+
+
+def test_drill_finds_breach_and_fixes_it():
+    twin = _twin()
+    res = defense_drill(twin, seed=7, apply=True)
+    s = res["summary"]
+    assert s["breach_evaded_before_usd"] > 0
+    assert res["chosen"] is not None
+    assert s["breach_evaded_after_usd"] < s["breach_evaded_before_usd"]
+    assert res["chosen"]["legit_review_rate"] <= MAX_LEGIT_REVIEW_RATE
+    assert twin.policy == res["after_policy"]
+
+
+def test_same_seed_replays_identical_attack():
+    twin = _twin()
+    a = run_attack(twin, "synthetic_identity", {"warmup_orders": 8, "bust_amount": 250}, seed=11)
+    b = run_attack(twin, "synthetic_identity", {"warmup_orders": 8, "bust_amount": 250}, seed=11)
+    assert [o["amount"] for o in a["orders"]] == [o["amount"] for o in b["orders"]]

@@ -271,8 +271,11 @@ class Twin:
             }
             self._dirty = True
             self.refresh()
+            by = self._account_orders()
             for o in self.orders:  # back-fill scores on mirrored history so what-if has traffic to replay
                 if o.get("risk") is None:
+                    others = [x["amount"] for x in by.get(o["account"], []) if x is not o]
+                    o["spend_ratio"] = round(o["amount"] / ((np.mean(others) if others else 60.0) + 20), 2)
                     o["risk"] = round(self._probs.get(o["account"], 0) * 0.95, 3)
                     o["decision"] = self.decide(o["risk"], o["amount"], False)
             return self.metrics
@@ -437,6 +440,13 @@ class Twin:
                     a = r.choice(legit)
                     amt = round(r.lognormvariate(3.6, 0.6), 2)
                     m = r.choice(list(self.merchants))
+                    roll = r.random()
+                    if roll < 0.06:  # real customers make the odd big purchase
+                        amt = round(amt * r.uniform(3, 8), 2)
+                    elif roll < 0.10:  # and buy from a new phone
+                        out.append(self.place_order(a.id, m, round(amt * r.uniform(1, 6), 2), self.new_device(),
+                                                    r.choice(list(a.ips))))
+                        continue
                 out.append(self.place_order(a.id, m, amt, r.choice(list(a.devices)), r.choice(list(a.ips))))
         return out
 
@@ -446,7 +456,8 @@ class Twin:
 
         def run(p):
             res = {"approved": 0, "review": 0, "blocked": 0, "fraud_caught_usd": 0.0, "fraud_missed_usd": 0.0,
-                   "good_blocked_usd": 0.0, "good_reviewed": 0, "fraud_total_usd": 0.0}
+                   "good_blocked_usd": 0.0, "good_reviewed": 0, "fraud_total_usd": 0.0,
+                   "good_blocked": 0, "good_total": 0}
             for o in scored:
                 d = self.decide(o["risk"], o["amount"], o.get("new_device", False), p, o.get("spend_ratio", 0))
                 res[{"approve": "approved", "review": "review", "block": "blocked"}[d]] += 1
@@ -457,8 +468,10 @@ class Twin:
                     else:
                         res["fraud_caught_usd"] += o["amount"]
                 else:
+                    res["good_total"] += 1
                     if d == "block":
                         res["good_blocked_usd"] += o["amount"]
+                        res["good_blocked"] += 1
                     if d == "review":
                         res["good_reviewed"] += 1
             for k in list(res):

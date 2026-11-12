@@ -437,6 +437,32 @@
           }
         },
         {
+          "name": "Defense drill (attack, search policies, replay, optionally apply)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seed\": 7,\n  \"apply\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/drill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "drill"
+              ]
+            }
+          }
+        },
+        {
           "name": "Attack",
           "request": {
             "method": "POST",

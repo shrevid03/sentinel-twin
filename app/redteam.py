@@ -5,6 +5,8 @@ never polluted. Each returns how much fraud value got through.
 """
 from __future__ import annotations
 
+import random
+
 ATTACKS = {
     "fraud_ring": {
         "description": "Freshly created accounts that share a small pool of devices and IPs, buying resellable goods.",
@@ -55,10 +57,12 @@ def _summary(kind, params, orders, notes=""):
     }
 
 
-def run_attack(twin, kind, params=None, shopper_guard=None):
+def run_attack(twin, kind, params=None, shopper_guard=None, seed=None):
     """Run one attack on a forked twin. Returns a result summary."""
     p = dict(params or {})
     t = twin.fork()
+    if seed is not None:  # a fixed seed replays the identical attack
+        t.rng = random.Random(seed)
     r = t.rng
     orders = []
     if kind == "fraud_ring":
@@ -124,7 +128,9 @@ def run_attack(twin, kind, params=None, shopper_guard=None):
                 "agent_trace": res.get("trace", [])}
     else:
         return {"attack": kind, "error": f"unknown attack. Choose from {list(ATTACKS)}"}
-    return _summary(kind, p, orders)
+    out = _summary(kind, p, orders)
+    out["seed"] = seed
+    return out
 
 
 def scorecard(results):

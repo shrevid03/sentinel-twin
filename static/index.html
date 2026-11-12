@@ -20,6 +20,7 @@
 </header>
 <nav class="tabs" id="tabs">
   <button data-tab="command" class="active">Command center</button>
+  <button data-tab="drill">Defense drill</button>
   <button data-tab="concierge">Concierge · chat &amp; voice</button>
   <button data-tab="investigator">Investigator</button>
   <button data-tab="redteam">Red team</button>
@@ -43,6 +44,20 @@
       <div class="card feedcard"><h3>Live event feed</h3><ul id="feed"></ul></div>
     </div>
   </div>
+</section>
+
+<!-- DEFENSE DRILL -->
+<section id="tab-drill" class="tab">
+  <div class="card drill-hero"><div class="cardhead"><div><h3>Defense drill</h3>
+    <p class="muted">One click: the red team attacks a frozen copy of the twin, the simulator searches 216 policies while pricing false positives, then the <b>same</b> seeded attacks are replayed under the winner. Live traffic is untouched until you apply.</p></div>
+    <div class="row"><button id="btn-drill" class="big">Run defense drill</button><button class="ghost" id="btn-drill-apply" disabled>Apply hardened policy to live</button><button class="ghost" id="btn-drill-rollback" disabled>Roll back</button></div></div>
+    <p class="muted" id="drill-status"></p></div>
+  <div class="card drill-step" id="ds-1"><h3>1 · Red team attacks</h3><div id="d-attacks"></div></div>
+  <div class="card drill-step" id="ds-2"><h3>2 · Simulator searches</h3><p id="d-search" class="muted"></p><div id="d-cands"></div></div>
+  <div class="card drill-step" id="ds-3"><h3>3 · Same attack replayed</h3><div id="d-verify"></div><p id="d-fresh" class="muted"></p></div>
+  <div class="card drill-step" id="ds-4"><h3>4 · Scorecard</h3><div class="kpis big" id="d-kpis"></div>
+    <div class="drill-chart"><canvas id="d-chart" height="200"></canvas></div>
+    <p class="muted">Remaining leak: synthetic-identity warm-up orders under $60 look like normal shopping; catching them would cost more good customers than they're worth.</p></div>
 </section>
 
 <!-- CONCIERGE -->
@@ -154,5 +169,6 @@
 <script src="/static/vendor/marked.min.js"></script>
 <script src="/static/vendor/purify.min.js"></script>
 <script src="/static/app.js"></script>
+<script src="/static/drill.js"></script>
 </body>
 </html>

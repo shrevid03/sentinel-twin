@@ -17,10 +17,16 @@ Sentinel Twin detects a potential attack, explains the risk, tests its defenses 
 
 Everything works by chat or voice in 10 Indian languages.
 
-## The result that matters (one real run, synthetic twin data)
-- The red team found two gaps in our own baseline: a quiet $250 account takeover and low-and-slow synthetic identities were approved.
-- The what-if simulator replayed 458 orders, including 58 attack orders, under a hardened policy. Fraud missed fell from $2,513 to $969, and the catch rate rose from 94.3% to 97.8%. Zero good customers were blocked or sent to review.
-- After the policy was applied, the same $250 takeover was stopped (sent to review), and so was the synthetic identity's $250 bust-out. Its small warm-up orders still pass, because on their own they look exactly like a good customer's. That is the next thing to fix.
+## The result that matters: one click, the Defense drill
+The Defense drill tab runs the whole loop in about 4 seconds on one frozen copy of the twin. The red team attacks, the simulator searches 216 policies while pricing false positives ($4 per good order reviewed, plus the full value of any good order blocked, and never more than 8% of good customers reviewed), and then the identical seeded attacks are replayed under the winner.
+
+One real run (seed 7, 12 Nov 2026, synthetic twin data):
+- Attack dollars that got through, same seeded attacks: **$1,808 before, $443 after**.
+- Catch rate on replayed traffic plus attacks: **95.9% to 99.0%**.
+- Good customers sent to review: **0 to 1 of 324**. Good orders blocked: $0 both times. False-positive cost: $0 to $4.
+- Held-out check on fresh seeds the policy was never tuned on: $434 of $5,808 got through.
+- The quiet $250 account takeover, the fraud ring and both card-testing attacks went to $0.
+- What still gets through: synthetic-identity warm-up orders under $60. They look like normal shopping, and catching them would cost more good customers than they're worth. The drill reports this instead of hiding it.
 
 ## Safety guarantees, enforced in code and covered by tests
 - The spending mandate and the risk gate run in code, not in the prompt. A prompt-injected agent that tries to buy $2,500 of gift cards is blocked.
@@ -53,4 +59,4 @@ python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, p
 1. Live demo: <Render URL>
 2. Or run locally: see README "Run it". It works with no keys in demo mode.
 3. PayPal sandbox buyer login for the payment popup: <sandbox personal account email> / <password>
-4. To see the defining moment: Red team tab > fire account_takeover (amount 250, foreign false) > What-if: Run simulation > Apply > fire it again.
+4. To see the defining moment: open the Defense drill tab and click Run defense drill (about 4 seconds), then Apply hardened policy to live.

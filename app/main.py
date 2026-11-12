@@ -17,6 +17,7 @@ from pydantic import BaseModel  # noqa: E402
 
 from . import integrations  # noqa: E402
 from .agents import LANGS, CaptureRefused, Team  # noqa: E402
+from .drill import defense_drill  # noqa: E402
 from .paypal import PayPal, PayPalError  # noqa: E402
 from .redteam import ATTACKS, run_attack  # noqa: E402
 from .twin import Twin, _public  # noqa: E402
@@ -202,6 +203,19 @@ def attack(body: AttackIn):
     trace = []
     return {"result": run_attack(twin, body.attack, body.params, shopper_guard=lambda: team.injection_probe(trace)),
             "trace": trace}
+
+
+class DrillIn(BaseModel):
+    seed: int = 7
+    apply: bool = False
+
+
+@app.post("/api/drill")
+def drill(body: DrillIn):
+    """One-click defense drill: attack, search for a safer policy, replay the same attack, optionally apply."""
+    res = defense_drill(twin, seed=body.seed, apply=body.apply)
+    team.last_attack_orders = [o for r in res["probes"] + res["adapted"] for o in r["orders"]]
+    return res
 
 
 @app.get("/api/redteam/runs")

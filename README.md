@@ -6,17 +6,25 @@ An AI shopping agent pays with PayPal. A digital twin of the merchant's business
 
 Built for the PayPal AI Hackathon 2026. Targets: Best Use of PayPal + AI, Most Creative, Best Use of Agentic Commerce and Best Demo Delivery.
 
-## The result, in one run
+## One click: Defense drill
 
-| | Baseline policy | Hardened policy (found by the red team, measured by the simulator) |
+The **Defense drill** tab runs the whole loop in about 4 seconds, on one frozen copy of the twin so before and after compare like with like:
+
+1. **Red team attacks.** Five playbooks with fixed seeds, then mutates the ones that were caught (smaller amounts, older accounts, no foreign IP) and records what got through.
+2. **Simulator searches.** It tests 216 policies on replayed traffic plus those attack orders. Score = fraud $ caught minus false-positive cost ($4 per good order sent to review, plus the full value of good orders blocked). Any policy that reviews more than 8% of good customers is rejected.
+3. **Same attack replayed.** The identical seeded attacks run again under the winning policy, plus fresh-seed variants as a held-out check.
+4. **Apply or roll back** the winning policy on the live twin with one click.
+
+| Result (seed 7, real run on 12 Nov 2026) | Before | After |
 |---|---|---|
-| Fraud missed (458 replayed orders incl. 58 attack orders) | $2,513 | $969 |
-| Catch rate (by value) | 94.3% | 97.8% |
-| Good customers blocked or sent to review | 0 | 0 |
-| Quiet $250 account takeover | approved | stopped (review) |
-| Synthetic identity $250 bust-out | approved | stopped (review); small warm-up orders still pass |
+| Attack $ that got through (same seeded attacks) | $1,808 | $443 |
+| Catch rate (replayed traffic plus attacks) | 95.9% | 99.0% |
+| Good customers sent to review (of 324) | 0 | 1 |
+| Good orders blocked | $0 | $0 |
+| False-positive cost | $0 | $4 |
+| Held-out check (fresh seeds, never tuned on) | | $434 of $5,808 got through |
 
-From a real run on 12 Nov 2026 on the synthetic, seeded twin. Numbers vary slightly between runs.
+The fix chosen: review at risk 0.3 (was 0.5), review new-device orders over $150 (was $300), and review orders 4x the buyer's usual spend. The $250 account takeover, the fraud ring and both card-testing attacks went to $0. What still gets through is synthetic-identity warm-up orders under $60: they look like normal shopping, and catching them would cost more good customers than they're worth. Numbers vary a little with live traffic; the drill (`POST /api/drill`) is tested in `tests/test_drill.py`.
 
 ## Safety guarantees (enforced in code, covered by `tests/test_safety.py`)
 
@@ -87,7 +95,7 @@ With no AI key at all, a deterministic **demo brain** drives the same tools, so 
 
 * **AG Grid** (Community): accounts, red-team results, orders, checkouts and API call grids (sorting, filtering, pagination, quick filter, custom cell renderers).
 * **Render**: `render.yaml` blueprint for one-click deploy with a health check.
-* **Postman**: `docs/postman_collection.json` covers all 25 endpoints, with sample bodies.
+* **Postman**: `docs/postman_collection.json` covers all 26 endpoints, with sample bodies.
 * **APIMatic**: `docs/openapi.json` (OpenAPI 3.1, generated from the API) can be imported into APIMatic to generate SDKs and docs.
 * **Elastic** (optional): set `ELASTIC_URL` / `ELASTIC_API_KEY` and every twin event (orders, decisions, freezes, policy changes) is indexed for Kibana.
 * **Zapier** (optional): set `ZAPIER_WEBHOOK_URL` (a Catch Hook) and every high-risk event is sent to Zapier, for example to Slack or email.
@@ -148,6 +156,7 @@ pytest -q
 * `test_gradients_match_finite_differences`: every GAT gradient matches numerical differentiation.
 * `test_twin_trains_and_detects_rings`: the GAT reaches a test AUC above 0.85 on held-out accounts.
 * `test_openai_compatible_agent_checks_out`: the Gemini/Groq/Ollama tool loop drives a real checkout end to end (mocked model).
+* `tests/test_drill.py` (2 tests): the drill finds a breach, picks a policy within the 8% good-customer review cap that lets less through on the identical replay, applies it, and the same seed replays identical attacks.
 * `tests/test_safety.py` (6 tests): review and block decisions never create a PayPal order; repeat captures charge once and count spend once; the mandate is re-checked at capture; unknown orders can't be captured; unverified webhooks change nothing.
 
 ## A 3-minute tour
@@ -155,18 +164,19 @@ pytest -q
 1. **Command center**: the twin graph lights up fraud rings in red. Click a node to see the attention weights behind its score.
 2. **Concierge**: pick Hindi, tap the mic, say *"मेरी माँ के लिए दिवाली का तोहफ़ा 40 डॉलर से कम में खरीदो"*. The agent reads the mandate, searches, checks the twin, creates a PayPal order, and you approve it with PayPal.
 3. **Red team**: *Launch adaptive campaign*. Watch it find that a quiet account takeover and low-and-slow synthetic identities slip through.
-4. **The defining moment**: fire `account_takeover` by hand (amount 250, foreign false). It is approved. In **What-if**, run the hardened policy and read fraud missed and good customers affected, then *Apply to live policy*. Fire the same attack again: it is stopped before any payment starts.
+4. **The defining moment**: open **Defense drill** and click *Run defense drill*. Watch the attacks get through, the simulator pick a policy that prices false positives, the same attacks get stopped, and the before → after scorecard. Then *Apply hardened policy to live* (or *Roll back*).
 5. **Investigator**: *Investigate riskiest*. It freezes the ring and files a case report.
 
 ## Project layout
 
 ```
 app/
-  main.py          FastAPI server, 25 endpoints, background traffic simulator
+  main.py          FastAPI server, 26 endpoints, background traffic simulator
   twin.py          digital twin graph, simulator, fork, what-if replay, explanations
   gat.py           graph attention network in NumPy (forward + backward + Adam)
   agents.py        Concierge, Shopping, Investigator, Red Team agents (Claude tool use + demo brain)
   redteam.py       attack playbooks run on twin forks, scorecard
+  drill.py         one-click defense drill: attack, policy search with priced false positives, identical replay
   paypal.py        PayPal REST client (OAuth, Orders v2, Payments v2 refunds, webhook verification)
   catalog.py       demo store catalog (plus a poisoned listing for the injection attack)
   integrations.py  Elastic and Zapier sinks
