@@ -253,13 +253,13 @@ function renderAttacks() {
 }
 function addResults(results, replace) {
   const rows = results.map((r) => ({ attack: r.attack, params: JSON.stringify(r.params || {}), fraud: r.fraud_usd, stopped: r.stopped_usd,
-    evaded: r.evaded_usd, detection: r.detection_rate, notes: r.notes || "" }));
+    evaded: r.evaded_usd, detection: r.detection_rate, decided_by: r.decided_by || "", notes: r.why_adapted ? "Why adapted: " + r.why_adapted : (r.notes || "") }));
   if (!rtGrid) {
     rtGrid = agGrid.createGrid($("#rt-grid"), { rowData: rows, columnDefs: [
       { field: "attack" }, { field: "params", flex: 1 }, { field: "fraud", valueFormatter: (p) => money(p.value), width: 100 },
       { field: "stopped", headerName: "Intercepted", headerTooltip: "blocked or sent to review", valueFormatter: (p) => money(p.value), width: 110 },
       { field: "evaded", valueFormatter: (p) => money(p.value), width: 100, cellStyle: (p) => ({ color: p.value > 0 ? "#ff5d6c" : "#2ecc8f" }) },
-      { field: "detection", headerName: "Intercept %", width: 110, valueFormatter: (p) => Math.round(p.value * 100) + "%" }, { field: "notes", flex: 1 }],
+      { field: "detection", headerName: "Intercept %", width: 110, valueFormatter: (p) => Math.round(p.value * 100) + "%" }, { field: "decided_by", headerName: "Decided by", width: 150 }, { field: "notes", headerName: "Why / notes", flex: 1, tooltipField: "notes" }],
       defaultColDef: { resizable: true, sortable: true } });
   } else if (replace) rtGrid.setGridOption("rowData", rows);
   else rtGrid.applyTransaction({ add: rows, addIndex: 0 });

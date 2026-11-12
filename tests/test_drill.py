@@ -46,3 +46,26 @@ def test_compare_engines_on_identical_orders():
     u = c["unseen_attacks"]
     assert u["gat_rules_hardened"]["intercepted_usd"] >= u["gat_rules"]["intercepted_usd"]
     assert c["account_auc"]["test_accounts"] > 0
+
+
+def test_adaptations_explain_themselves():
+    from app.redteam import why_adapted
+    prev = {"attack": "fraud_ring", "detection_rate": 0.92,
+            "params": {"size": 6, "shared_devices": 2, "amount": 400, "age_days": 10}}
+    new = {"attack": "fraud_ring", "params": {"size": 3, "shared_devices": 3, "amount": 60, "age_days": 200}}
+    text = why_adapted(prev, new)
+    assert text.startswith("fraud_ring intercepted at 92%")
+    assert "smaller amounts" in text and "older accounts" in text
+    twin = _twin()
+    res = defense_drill(twin, seed=7)
+    assert res["adapted"] and all(a["why_adapted"] and a["decided_by"] for a in res["adapted"])
+
+
+def test_red_team_records_who_decided():
+    from app import agents
+    from app.paypal import PayPal
+    team = agents.Team(_twin(), PayPal())
+    team.brain.client, team.brain.provider = None, "demo"  # never call a real LLM from tests
+    run = team.red_team()
+    adapted = [r for r in run["results"] if r.get("why_adapted")]
+    assert adapted and all(r["decided_by"] == "scripted fallback" for r in run["results"])

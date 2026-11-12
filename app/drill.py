@@ -10,7 +10,7 @@ from __future__ import annotations
 import itertools
 import time
 
-from .redteam import run_attack
+from .redteam import run_attack, why_adapted
 
 # What a false positive costs the merchant. A legit order sent to manual review costs analyst time plus
 # checkout friction; a legit order blocked is a lost sale (the whole order value).
@@ -39,7 +39,8 @@ GRID = {
 
 def _slim(r):
     return {k: r.get(k) for k in ("attack", "params", "seed", "fraud_usd", "stopped_usd", "evaded_usd",
-                                  "blocked_usd", "reviewed_usd", "detection_rate")} | {"orders": r.get("orders", [])}
+                                  "blocked_usd", "reviewed_usd", "detection_rate", "why_adapted",
+                                  "decided_by")} | {"orders": r.get("orders", [])}
 
 
 def _cost(m):
@@ -75,8 +76,10 @@ def defense_drill(twin, seed=7, apply=False, log=None):
     for i, r in enumerate(probes):
         if r["detection_rate"] >= 0.8 and r["attack"] in ADAPT:
             a = run_attack(base, r["attack"], ADAPT[r["attack"]], seed=seed + 100 + i)
+            a["why_adapted"] = why_adapted(r, a)
+            a["decided_by"] = "scripted drill (fixed, reproducible playbook)"
             adapted.append(a)
-            say("adapt", f"{a['attack']} caught, mutated to {a['params']}: ${a['evaded_usd']:,.0f} got through")
+            say("adapt", f"{a['why_adapted']}: ${a['evaded_usd']:,.0f} got through")
     breaches = [r for r in probes + adapted if r["evaded_usd"] > 0]
     breaches.sort(key=lambda r: -r["evaded_usd"])
     attack_orders = [o for r in probes + adapted for o in r["orders"]]

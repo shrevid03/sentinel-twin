@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function attackRows(rows, round) {
   return rows.map((r) => `<tr class="${r.evaded_usd > 0 ? "breach" : ""}"><td>${esc(r.attack)}</td><td class="muted">${round}</td>
-    <td>${esc(fmtParams(r.params))}</td><td class="n">${money(r.fraud_usd)}</td><td class="n">${money(r.blocked_usd)} / ${money(r.reviewed_usd)}</td><td class="n ev">${money(r.evaded_usd)}</td>
+    <td>${esc(fmtParams(r.params))}${r.why_adapted ? `<div class="muted small">Why: ${esc(r.why_adapted)} · decided by ${esc(r.decided_by)}</div>` : ""}</td><td class="n">${money(r.fraud_usd)}</td><td class="n">${money(r.blocked_usd)} / ${money(r.reviewed_usd)}</td><td class="n ev">${money(r.evaded_usd)}</td>
     <td class="n">${Math.round((r.detection_rate || 0) * 100)}%</td></tr>`).join("");
 }
 

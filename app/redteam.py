@@ -43,6 +43,32 @@ def _clamp(v, lo, hi, default):
         return default
 
 
+_DIRECTION = {  # how each parameter change reads in plain words
+    ("amount", -1): "smaller amounts", ("final_amount", -1): "smaller cash-out", ("bust_amount", -1): "smaller bust-out",
+    ("age_days", 1): "older accounts", ("shared_devices", 1): "spread over more devices (fewer accounts per device)",
+    ("shared_devices", -1): "fewer shared devices", ("size", -1): "fewer accounts", ("probes", -1): "fewer test orders",
+    ("warmup_orders", 1): "more trust-building orders", ("foreign", -1): "local IP instead of a foreign one",
+}
+
+
+def why_adapted(prev, new):
+    """Explain an adaptation: what was intercepted last time, and which knobs moved which way."""
+    pp, np_ = prev.get("params") or {}, new.get("params") or {}
+    shown = ", ".join(f"{k} {v}" for k, v in pp.items() if k != "victim")
+    moves = []
+    for k, v in np_.items():
+        old = pp.get(k)
+        if k == "victim" or old is None or old == v:
+            continue
+        try:
+            d = 1 if float(v) > float(old) else -1
+        except (TypeError, ValueError):
+            d = -1 if v in (False, "false") else 1
+        moves.append(_DIRECTION.get((k, d), f"{k} {old} -> {v}"))
+    return (f"{prev['attack']} intercepted at {prev.get('detection_rate', 0):.0%} ({shown}) -> "
+            + (", ".join(moves) or "same parameters, new draw"))
+
+
 def _summary(kind, params, orders, notes=""):
     fraud = [o for o in orders if o["fraud"]]
     total = sum(o["amount"] for o in fraud)

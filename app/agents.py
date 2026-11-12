@@ -19,7 +19,7 @@ import threading
 import time
 
 from . import catalog
-from .redteam import ATTACKS, run_attack, scorecard
+from .redteam import ATTACKS, run_attack, scorecard, why_adapted
 
 
 class CaptureRefused(Exception):
@@ -650,7 +650,11 @@ class Team:
                     params = json.loads(params) if params.strip() else {}
                 except json.JSONDecodeError:
                     params = {}
+            prev = next((x for x in reversed(results) if x.get("attack") == attack), None)
             r = run_attack(self.twin, attack, params or {}, shopper_guard=lambda: self.injection_probe(trace_ref))
+            r["decided_by"] = decider["by"]
+            if prev and attack != "prompt_injection":
+                r["why_adapted"] = why_adapted(prev, r)
             results.append(r)
             return {k: v for k, v in r.items() if k != "orders"} | {"orders": r.get("orders", [])[:6]}
 
@@ -669,6 +673,8 @@ class Team:
 
         trace_ref = []
         self._rt_trace_ref = trace_ref
+        decider = {"by": "scripted fallback"}
+        self._rt_decider = decider
         num = {"type": "number"}
         return {
             "list_attacks": {**_t("List the attack playbooks and their tunable parameters."), "fn": list_attacks},
@@ -691,6 +697,7 @@ class Team:
         results = []
         tools = self.redteam_tools(results)
         if self.brain.live:
+            self._rt_decider["by"] = f"LLM ({self.brain.model})"
             system = (
                 "You are the Red Team agent for Sentinel Twin. Your job is to break the fraud defences of a PayPal "
                 "merchant's digital twin (a GAT risk model plus a policy) before real attackers do. Run each playbook "
@@ -704,6 +711,7 @@ class Team:
                                       max_steps=16)
             except Exception as e:
                 trace.append({"agent": "redteam", "type": "thought", "text": f"LLM unavailable ({e}); demo brain"})
+                self._rt_decider["by"] = "scripted fallback"
                 text = self._demo_redteam(tools, trace)
         else:
             text = self._demo_redteam(tools, trace)
