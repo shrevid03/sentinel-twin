@@ -66,7 +66,7 @@ cd ~/sentinel-twin
 - **PayPal sandbox buyer.** Approve in the PayPal popup with a **US personal sandbox buyer** account, ideally in an **Incognito** window. Don't use the business (merchant) sandbox login, or your real PayPal login.
 - **Browser cache.** App assets use `?v=N` in `index.html`; bump it when changing JS or CSS.
 - **Free Render plan** sleeps after ~15 minutes idle and takes ~1 minute to wake: open the link yourself before judges do.
-- Free Gemini keys have rate limits; the demo brain takes over if no key is set.
+- Free Gemini keys have daily quotas. gemini-2.5-flash ran out on 12 Nov; the default is now `gemini-3.5-flash-lite` (set `LLM_MODEL` to override). If Gemini errors, the scripted demo brain takes over, and the chat never shows a raw error.
 
 ## Deploy (Render)
 
@@ -76,11 +76,11 @@ cd ~/sentinel-twin
 2. Enter secrets (names only here, values from your own `.env`): `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `GEMINI_API_KEY`, `CHANNEL3_API_KEY`, `ADMIN_TOKEN` (any password you choose). Optional: `PAYPAL_WEBHOOK_ID`, `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, `ELASTIC_URL`, `ELASTIC_API_KEY`, `ZAPIER_WEBHOOK_URL`.
 3. Every push to `main` redeploys automatically.
 
-Public URL: **`https://<your-service>.onrender.com`** (fill in once live)
+Public URL: **https://sentinel-twin.onrender.com** (app at https://sentinel-twin.onrender.com/app; free Render plan: if it has been idle, the first load takes about a minute while it wakes up).
 
 ## Remaining to do
 
 - [ ] Record the demo video (script: `docs/VIDEO_SCRIPT.md`, with the closing line), under 3:00
 - [ ] Upload to YouTube as Public
-- [ ] Deploy on Render and paste the URL above, in the README and in Devpost
+- [x] Deploy on Render (https://sentinel-twin.onrender.com), linked in the README and Devpost text
 - [ ] Submit on Devpost (text: `docs/DEVPOST.md`; add the video link, Render link, repo link and cover image)

@@ -73,7 +73,7 @@ Catching warm-up orders from synthetic identities, sparse attention for millions
 python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, vis-network, chart.js, channel3, paypal-sandbox, svg, canvas
 
 ## Testing instructions (fill in before submitting)
-1. Live demo: <Render URL>
+1. Live demo: https://sentinel-twin.onrender.com (app at /app; free Render plan: if it has been idle, the first load takes about a minute while it wakes up).
 2. Or run locally: see README "Run it". It works with no keys in demo mode.
 3. PayPal sandbox buyer login for the payment popup: <sandbox personal account email> / <password>
 4. Click **Reset demo** (top right) for a clean start.

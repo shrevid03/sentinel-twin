@@ -4,6 +4,8 @@
 
 An AI shopping agent pays with PayPal. A digital twin of the merchant's business checks every order with a graph attention network. An adaptive red team attacks a safe copy of the twin to find weaknesses, and a what-if simulator measures each fix, including its cost to good customers, before it goes live. By chat or voice, in 10 Indian languages.
 
+**Live demo: https://sentinel-twin.onrender.com** (the app itself is at [/app](https://sentinel-twin.onrender.com/app); free Render plan: if it has been idle, the first load takes about a minute while it wakes up).
+
 Built for the PayPal AI Hackathon 2026. Targets: Best Use of PayPal + AI, Most Creative, Best Use of Agentic Commerce and Best Demo Delivery.
 
 ## One click: Defense drill (policy hardening on synthetic attack traffic)
