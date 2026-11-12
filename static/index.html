@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="/static/vendor/ag-grid.css">
 <link rel="stylesheet" href="/static/vendor/ag-theme-quartz.css">
-<link rel="stylesheet" href="/static/style.css?v=8">
+<link rel="stylesheet" href="/static/style.css?v=9">
 </head>
 <body>
 <div id="page-smoke" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -99,7 +99,7 @@
     <div class="card graphcard">
       <div class="cardhead"><h3>The twin: accounts, devices and IPs, coloured by GAT risk</h3>
         <div><button class="ghost" id="btn-burst">Simulate traffic burst</button> <button class="ghost" id="btn-reset-graph">Full view</button></div></div>
-      <div class="graphwrap"><div class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div id="graph"></div></div>
+      <div class="graphwrap"><div class="fog" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><svg class="wisp" aria-hidden="true"><filter id="wisp-f"><feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="3" seed="7"/><feColorMatrix values="0 0 0 0 .25  0 0 0 0 .55  0 0 0 0 1  0 0 0 .55 -.12"/></filter><rect width="100%" height="100%" filter="url(#wisp-f)"/></svg><div id="graph"></div><div class="vignette" aria-hidden="true"></div></div>
       <div class="legend"><span><i class="dot acc"></i>account</span><span><i class="dot dev"></i>device</span><span><i class="dot ip"></i>IP</span><span><i class="dot hot"></i>high risk</span><span><i class="dot frozen"></i>restricted (merchant-side, simulated)</span></div>
     </div>
     <div class="side">
@@ -274,10 +274,10 @@
 <script src="/static/vendor/chart.umd.min.js"></script>
 <script src="/static/vendor/marked.min.js"></script>
 <script src="/static/vendor/purify.min.js"></script>
-<script src="/static/app.js?v=8"></script>
-<script src="/static/drill.js?v=8"></script>
-<script src="/static/receipts.js?v=8"></script>
-<script src="/static/review.js?v=8"></script>
-<script src="/static/fx.js?v=8"></script>
+<script src="/static/app.js?v=9"></script>
+<script src="/static/drill.js?v=9"></script>
+<script src="/static/receipts.js?v=9"></script>
+<script src="/static/review.js?v=9"></script>
+<script src="/static/fx.js?v=9"></script>
 </body>
 </html>

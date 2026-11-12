@@ -216,3 +216,34 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:100;op
 @media (prefers-reduced-motion:reduce){
   .hero-art,.hero-art .scan,.tab.active .tabhero svg,.skel::after,.drill-step.show,.drill-step.show tr.breach td,#ds-4.show #d-kpis .kpi.ok::after{animation:none!important}
 }
+
+/* ===== twin graph: midnight blue fog ===== */
+.graphwrap{position:relative;border-radius:20px;overflow:hidden;isolation:isolate;border:1px solid rgba(0,156,222,.25);
+  background:radial-gradient(ellipse at 50% 45%,#0A1F4D 0%,#001435 55%,#000B24 100%);
+  box-shadow:0 0 0 1px rgba(0,156,222,.12),0 0 28px rgba(0,156,222,.18),0 12px 40px rgba(0,20,53,.25)}
+.graphwrap .fog{position:absolute;inset:-10%;z-index:0;pointer-events:none}
+.graphwrap .fog i{position:absolute;border-radius:50%;mix-blend-mode:screen;will-change:transform}
+.graphwrap .fog i:nth-child(1){width:60%;height:70%;left:-5%;top:-5%;background:radial-gradient(circle,rgba(0,112,224,.25),transparent 70%);filter:blur(80px);animation:fogA 60s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(2){width:55%;height:60%;right:-5%;top:10%;background:radial-gradient(circle,rgba(0,156,222,.22),transparent 70%);filter:blur(90px);animation:fogB 75s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(3){width:70%;height:55%;left:20%;bottom:-10%;background:radial-gradient(circle,rgba(58,91,255,.20),transparent 70%);filter:blur(100px);animation:fogC 90s ease-in-out infinite alternate}
+.graphwrap .fog i:nth-child(4){width:40%;height:45%;left:35%;top:20%;background:radial-gradient(circle,rgba(0,194,255,.14),transparent 70%);filter:blur(70px);animation:fogA 48s ease-in-out infinite alternate-reverse}
+.graphwrap .fog i:nth-child(5){width:50%;height:50%;left:-10%;bottom:-5%;background:radial-gradient(circle,rgba(0,156,222,.12),transparent 70%);filter:blur(85px);animation:fogB 66s ease-in-out infinite alternate-reverse}
+@keyframes fogA{to{transform:translate(18%,12%) scale(1.15)}}
+@keyframes fogB{to{transform:translate(-16%,10%) scale(.92)}}
+@keyframes fogC{to{transform:translate(-10%,-14%) scale(1.1)}}
+.graphwrap .wisp{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:.18;mix-blend-mode:screen;pointer-events:none}
+.graphwrap .vignette{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:20px;box-shadow:inset 0 0 90px 20px rgba(0,8,30,.65)}
+.graphwrap #graph{position:relative;z-index:1;height:540px}
+@media (prefers-reduced-motion:reduce){.graphwrap .fog i{animation:none}}
+/* glassy graph tooltip */
+div.vis-tooltip{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;font-family:var(--font)!important}
+.gtip{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;color:#EAF4FF;font-size:12px;
+  background:rgba(10,31,77,.72);border:1px solid rgba(143,211,255,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,8,30,.45)}
+.gtip b{font-size:13px;color:#fff}.gtip span{color:#9FB3D9}
+/* legend: small glowing dots */
+.legend .dot{width:9px;height:9px}
+.legend .dot.acc{background:#8FD3FF;box-shadow:0 0 8px rgba(0,156,222,.9)}
+.legend .dot.dev{background:#4FE3FF;border-radius:2px;box-shadow:0 0 8px rgba(79,227,255,.8)}
+.legend .dot.ip{background:#9FB3D9;box-shadow:0 0 6px rgba(159,179,217,.8)}
+.legend .dot.hot{background:#FF5A6E;box-shadow:0 0 10px rgba(255,90,110,.9)}
+.legend .dot.frozen{background:#6B7A90;border:1.5px dashed #C5CFDD;box-shadow:none}
