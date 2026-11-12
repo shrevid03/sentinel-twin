@@ -321,3 +321,12 @@ div.vis-tooltip{padding:0!important;border:0!important;background:transparent!im
 .donut-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:-1px}
 .donut-legend b{color:var(--navy)}
 .kpi .spark{top:auto!important;bottom:10px;width:52px!important;height:18px!important}
+
+/* drill attack flow */
+.flowsvg{width:100%;height:auto;display:block}
+.flowsvg .fl-title{font:700 14px var(--font);fill:var(--navy)}.flowsvg .fl-sub{font:500 12px var(--font);fill:var(--muted)}
+.flowsvg .arrow{animation:4.2s cubic-bezier(.4,0,.6,1) infinite both}
+.flowsvg .arrow.pass{animation-name:flowPass}.flowsvg .arrow.defl{animation-name:flowDefl}
+@keyframes flowPass{0%{transform:translateX(0);opacity:0}8%{opacity:1}55%{transform:translateX(225px)}90%{opacity:1}100%{transform:translateX(390px);opacity:0}}
+@keyframes flowDefl{0%{transform:translate(0,0);opacity:0}8%{opacity:1}55%{transform:translate(215px,0);opacity:1}100%{transform:translate(170px,var(--dy));opacity:0}}
+@media (prefers-reduced-motion:reduce){.flowsvg .arrow{animation:none;opacity:1}}

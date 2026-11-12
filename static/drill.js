@@ -145,7 +145,7 @@ async function loadHero() {
   $("#hero-proof").innerHTML = real
     ? `<span class="proof">✓ Real PayPal sandbox payment captured · order ${esc(real.paypal_order_id)} · ${money(real.total)}</span>` : "";
   if (!d) {
-    window.renderGauge?.(null);
+    window.renderGauge?.(null); window.renderFlow?.(null);
     $("#loop-card").innerHTML = `<div class="loop-cta"><div><h3>Attack → Analyze → Harden → Verify</h3>
       <p class="muted" style="margin:0">No drill yet. One click runs the red team against a frozen copy of the twin, searches for a safer policy and replays the same attacks.</p></div>
       <button id="loop-run">Run defense drill</button></div>`;
@@ -153,7 +153,7 @@ async function loadHero() {
     return;
   }
   const s = d.summary || {};
-  window.renderGauge?.(d);
+  window.renderGauge?.(d); window.renderFlow?.(d);
   const step = (n, title, v) => `<div class="step"><b><span class="n">${n}</span>${title}</b><span class="v">${v}</span></div>`;
   $("#loop-card").innerHTML = `<div class="cardhead"><h3>Latest defense drill</h3><button class="ghost" id="loop-open">Open drill</button></div>
     <div class="loop">
@@ -170,3 +170,29 @@ loadHero();
 const _runDrill = runDrill;
 runDrill = async (...a) => { try { return await _runDrill(...a); } finally { loadHero(); } };
 $("#btn-drill").onclick = () => runDrill();
+
+/* Drill tab: attack arrows hitting the shield, before vs after hardening (counts from the latest drill) */
+window.renderFlow = (d) => {
+  const el = document.getElementById("drill-flow"); if (!el) return;
+  const N = 10, s = d?.summary || {}, att = d?.attempted_usd || 0;
+  const share = (v) => (!att || !v ? 0 : Math.max(1, Math.round((N * v) / att)));
+  const passB = d ? share(s.breach_evaded_before_usd) : 3, passA = d ? (d.chosen ? share(s.breach_evaded_after_usd) : passB) : 0;
+  const panel = (ox, pass, title, sub, shieldCol) => {
+    const lanes = Array.from({ length: N }, (_, i) => i), passSet = new Set(lanes.filter((i) => i % Math.ceil(N / Math.max(pass, 1)) === 1).slice(0, pass));
+    while (passSet.size < pass) passSet.add(lanes.find((i) => !passSet.has(i)));
+    return `<g transform="translate(${ox} 0)">
+      <text x="10" y="22" class="fl-title">${title}</text><text x="10" y="40" class="fl-sub">${sub}</text>
+      <g transform="translate(250 56)"><path d="M30 0 0 11v22c0 20 13 35 30 41 17-6 30-21 30-41V11Z" fill="${shieldCol}"/><path d="M18 36l9 9 16-18" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+      ${lanes.map((i) => { const y = 58 + i * 7.2, ok = !passSet.has(i), dir = i < N / 2 ? -1 : 1;
+        return `<g class="arrow ${ok ? "defl" : "pass"}" style="--dy:${dir * (40 + (i % 3) * 14)}px;animation-delay:${(i * 0.37).toFixed(2)}s"><path d="M10 ${y}h26" stroke="${ok ? "#0070E0" : "#D93025"}" stroke-width="2.4" stroke-linecap="round"/><path d="M33 ${y - 4}l6 4-6 4" fill="${ok ? "#0070E0" : "#D93025"}"/></g>`; }).join("")}
+    </g>`;
+  };
+  const sub = (p) => `${p} of ${N} arrows get through`;
+  el.innerHTML = `<div class="cardhead"><h3>Attack flow <span class="tag synth">Synthetic attack traffic</span></h3>
+      <small class="muted">${d ? `Each arrow is a tenth of the ${money(att)} attempted. Red got through; blue was intercepted.` : "Illustration until you run a drill: then the arrows follow the real result."}</small></div>
+    <svg class="flowsvg" viewBox="0 0 900 140" role="img" aria-label="Before hardening ${passB} of ${N} attack arrows pass the shield; after hardening ${passA} of ${N}">
+      ${panel(0, passB, "Before hardening", d ? `${money(s.breach_evaded_before_usd)} got through · ${sub(passB)}` : "Today's policy", "#5B6B82")}
+      <line x1="450" y1="20" x2="450" y2="130" stroke="#E3E8EF" stroke-width="2"/>
+      ${panel(460, passA, "After hardening", d ? (d.chosen ? `${money(s.breach_evaded_after_usd)} got through · ${sub(passA)}` : "No better policy found") : "Run a drill to see it", "#003087")}
+    </svg>`;
+};
