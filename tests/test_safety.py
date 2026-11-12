@@ -108,3 +108,47 @@ def test_every_agent_checkout_gets_a_receipt(team):
     rejected = team.guarded_checkout([{"sku": "SKU-GFT-02", "qty": 5}])
     rr = team.receipts[rejected["receipt_id"]]
     assert rr["outcome"] == "rejected_by_mandate_guard" and not all(c["pass"] for c in rr["mandate_checks"])
+
+
+def test_investigator_only_proposes_refunds_and_freezes(team):
+    oid = _approved_checkout(team)
+    team.capture(oid)
+    tw_order = next(o for o in team.twin.orders if o["paypal_order_id"] == oid)
+    case = {"id": "CASE-T", "actions": []}
+    tools = team.investigator_tools(case)
+    refunds_before = sum(1 for c in team.pp.calls if "/refund" in c["path"])
+    out = tools["refund_order"]["fn"](order_id=tw_order["id"], reason="test")
+    assert out["status"].startswith("proposed")
+    assert tw_order["status"] == "captured"  # nothing happened yet
+    assert sum(1 for c in team.pp.calls if "/refund" in c["path"]) == refunds_before
+    target = team.buyer
+    fr = tools["freeze_account"]["fn"](account_id=target, reason="test")
+    assert team.twin.accounts[target].status == "active"
+
+    # reject leaves state unchanged
+    team.decide_action(fr["action_id"], False, "alice", "not enough evidence")
+    assert team.twin.accounts[target].status == "active"
+    assert team.actions[fr["action_id"]]["status"] == "rejected"
+
+    # approve executes exactly once
+    a1 = team.decide_action(out["action_id"], True, "alice", "confirmed")
+    a2 = team.decide_action(out["action_id"], True, "bob", "again")
+    assert a1["status"] == "approved" and a2.get("duplicate") is True
+    assert tw_order["status"] == "refunded"
+    assert sum(1 for c in team.pp.calls if "/refund" in c["path"]) == refunds_before + 1
+    assert [e["reviewer"] for e in team.audit] == ["alice", "alice"]
+
+
+def test_held_checkout_needs_a_reviewer(team):
+    team.twin.policy = {**team.twin.policy, "review_threshold": 0.0, "block_threshold": 1.01}
+    h1 = team.guarded_checkout(CART)["hold_id"]
+    h2 = team.guarded_checkout(CART)["hold_id"]
+    assert team.checkouts == {}
+    rejected = team.decide_hold(h2, False, "alice", "looks off")
+    assert rejected["status"] == "rejected" and team.checkouts == {}
+    released = team.decide_hold(h1, True, "alice", "known customer")
+    assert released["status"] == "released" and released["paypal_order_id"] in team.checkouts
+    again = team.decide_hold(h1, True, "bob")
+    assert again.get("duplicate") is True and len(team.checkouts) == 1
+    rc = team.receipts[team.holds[h1]["receipt_id"]]
+    assert rc["outcome"] == "released_by_reviewer" and rc["review"]["reviewer"] == "alice"

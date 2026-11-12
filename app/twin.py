@@ -620,7 +620,7 @@ class Twin:
     def freeze(self, account, reason=""):
         with self.lock:
             self.accounts[account].status = "frozen"
-            self._event("action", f"{account} frozen: {reason}", level="bad")
+            self._event("action", f"{account} restricted (merchant-side, simulated): {reason}", level="bad")
 
     def flagged(self, k=10):
         self.refresh()

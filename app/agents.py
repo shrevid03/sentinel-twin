@@ -212,6 +212,9 @@ class Team:
         self.checkouts: dict[str, dict] = {}
         self.receipts: dict[str, dict] = {}
         self.holds: dict[str, dict] = {}
+        self.actions: dict[str, dict] = {}  # investigator proposals awaiting merchant approval
+        self.audit: list[dict] = []
+        self._review_lock = threading.Lock()
         self._capture_lock = threading.Lock()
         self.last_attack_orders: list[dict] = []
         acc = twin.new_account(name="Demo Buyer", country="IN", age_days=900, kyc=True)
@@ -419,17 +422,20 @@ class Team:
             o = next((x for x in tw.orders if x["id"] == order_id), None)
             if not o:
                 return {"error": "order not found"}
-            if not o.get("capture_id"):
-                o["status"] = "cancelled"
-                return {"status": "cancelled_before_capture", "order": order_id}
-            ref = self.pp.refund_capture(o["capture_id"], o["amount"], reason)
-            o["status"] = "refunded"
-            return {"status": ref.get("status"), "refund_id": ref.get("id")}
+            ev = [f"order {order_id} ${o['amount']:.2f}, status {o['status']}, risk {o.get('risk')}",
+                  *(o.get("factors") or [])[:3]]
+            a = self.propose_action("refund", order_id, reason, ev, case)
+            return {"status": "proposed, awaiting merchant approval", "action_id": a["id"]}
 
         def freeze_account(account_id: str, reason: str):
-            tw.freeze(account_id, reason)
-            case["actions"].append(f"froze {account_id}: {reason}")
-            return {"status": "frozen", "account": account_id}
+            if account_id not in tw.accounts:
+                return {"error": "account not found"}
+            linked = tw.linked_accounts(account_id)
+            ev = [f"GAT risk {tw.risk(account_id):.2f}",
+                  f"{len(linked)} linked accounts via shared devices/IPs, "
+                  f"{sum(1 for l in linked if l['risk'] > 0.6)} high risk"]
+            a = self.propose_action("freeze", account_id, reason, ev, case)
+            return {"status": "proposed, awaiting merchant approval", "action_id": a["id"]}
 
         def file_case_report(title: str, verdict: str, summary: str, accounts: list, evidence: list,
                              recommended_actions: list):
@@ -451,10 +457,12 @@ class Team:
             "paypal_order_lookup": {**_t("Fetch a PayPal order by its PayPal order id.",
                                          {"paypal_order_id": {"type": "string"}}, ["paypal_order_id"]),
                                     "fn": paypal_order_lookup},
-            "refund_order": {**_t("Refund (or cancel if not yet captured) a twin order through PayPal.",
+            "refund_order": {**_t("Propose a refund (or cancel if not yet captured) of a twin order through PayPal. "
+                                  "Nothing happens until the merchant approves it in the review queue.",
                                   {"order_id": {"type": "string"}, "reason": {"type": "string"}},
                                   ["order_id", "reason"]), "fn": refund_order},
-            "freeze_account": {**_t("Freeze an account in the twin so future orders are blocked.",
+            "freeze_account": {**_t("Propose a merchant-side restriction (simulated in the twin, not a PayPal account "
+                                    "freeze) so future orders are blocked. The merchant must approve it.",
                                     {"account_id": {"type": "string"}, "reason": {"type": "string"}},
                                     ["account_id", "reason"]), "fn": freeze_account},
             "file_case_report": {**_t("File the final case report. Call exactly once at the end.", {
@@ -466,6 +474,94 @@ class Team:
                 ["title", "verdict", "summary", "accounts", "evidence", "recommended_actions"]),
                 "fn": file_case_report},
         }
+
+    # ============================================================ human review
+    def _audit(self, kind, target_id, decision, reviewer, note, result=None):
+        e = {"at": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": kind, "id": target_id, "decision": decision,
+             "reviewer": reviewer, "note": note, "result": result}
+        self.audit.append(e)
+        return e
+
+    def propose_action(self, kind, target, reason, evidence, case=None):
+        import uuid
+        aid = "ACT-" + uuid.uuid4().hex[:8].upper()
+        a = {"id": aid, "type": kind, "target": target, "reason": reason, "evidence": evidence,
+             "proposed_by": "investigator", "case_id": (case or {}).get("id"), "status": "pending",
+             "created_at": time.strftime("%Y-%m-%d %H:%M:%S"), "decision": None}
+        self.actions[aid] = a
+        if case is not None:
+            case["actions"].append(f"proposed {kind} of {target} ({aid}), awaiting merchant approval")
+        label = "merchant-side restriction (simulated)" if kind == "freeze" else "PayPal refund"
+        self.twin._event("action", f"Investigator proposed {label} for {target}: {reason} ({aid}, awaiting approval)",
+                         level="warn")
+        return a
+
+    def _execute(self, a):
+        tw = self.twin
+        if a["type"] == "freeze":
+            tw.freeze(a["target"], a["reason"])
+            return {"status": "restricted (merchant-side, simulated)", "account": a["target"]}
+        o = next((x for x in tw.orders if x["id"] == a["target"]), None)
+        if not o:
+            return {"error": "order not found"}
+        if not o.get("capture_id"):
+            o["status"] = "cancelled"
+            return {"status": "cancelled_before_capture", "order": a["target"]}
+        ref = self.pp.refund_capture(o["capture_id"], o["amount"], a["reason"])
+        o["status"] = "refunded"
+        return {"status": ref.get("status"), "refund_id": ref.get("id"), "paypal_mode": self.pp.mode}
+
+    def decide_action(self, action_id, approve, reviewer, note=""):
+        """Approve (execute exactly once) or reject a proposed action."""
+        with self._review_lock:
+            a = self.actions.get(action_id)
+            if not a:
+                raise KeyError(action_id)
+            if a["status"] != "pending":  # idempotent: a decided action never runs again
+                return {**a, "duplicate": True}
+            if approve:
+                a["result"] = self._execute(a)
+                a["status"] = "approved"
+            else:
+                a["status"] = "rejected"
+            a["decision"] = {"by": reviewer, "note": note, "at": time.strftime("%Y-%m-%d %H:%M:%S")}
+            self._audit("action", action_id, a["status"], reviewer, note, a.get("result"))
+            self.twin._event("review", f"{reviewer} {a['status']} {a['type']} of {a['target']} ({action_id})",
+                             level="ok" if approve else "info")
+            return a
+
+    def decide_hold(self, hold_id, release, reviewer, note=""):
+        """Release a held checkout (creates the PayPal order) or reject it. Each hold is decided once."""
+        with self._review_lock:
+            h = self.holds.get(hold_id)
+            if not h:
+                raise KeyError(hold_id)
+            if h["status"] != "pending":
+                return {**h, "duplicate": True}
+            rc = self.receipts.get(h["receipt_id"])
+            remaining = self.mandate["monthly_budget"] - self.mandate["spent"]
+            if release and (h["total"] > self.mandate["per_order_limit"] or h["total"] > remaining):
+                raise CaptureRefused(409, f"cannot release: ${h['total']} now exceeds the mandate "
+                                          f"(remaining ${remaining:.2f})")
+            h["decision"] = {"by": reviewer, "note": note, "at": time.strftime("%Y-%m-%d %H:%M:%S")}
+            if release:
+                h["status"] = "released"
+                if rc:
+                    self._stamp(rc, f"released by {reviewer} after review")
+                res = self._create_paypal_order(h["cart"], h["merchant"], h["total"], h["risk"], rc)
+                h["paypal_order_id"] = res["paypal_order_id"]
+                rc["outcome"] = "released_by_reviewer"
+            else:
+                h["status"] = "rejected"
+                if rc:
+                    rc["outcome"] = "rejected_by_reviewer"
+                    self._stamp(rc, f"rejected by {reviewer}; no PayPal order")
+            if rc:
+                rc["review"] = {"hold_id": hold_id, "status": h["status"], "reviewer": reviewer, "note": note}
+            self._audit("hold", hold_id, h["status"], reviewer, note, {"paypal_order_id": h.get("paypal_order_id")})
+            self.twin._event("review", f"{reviewer} {h['status']} held checkout {hold_id} (${h['total']})",
+                             level="ok" if release else "info")
+            return h
 
     def investigate(self, target=None, trace=None, lang="en-IN"):
         trace = trace if trace is not None else []
@@ -479,7 +575,8 @@ class Team:
                 "A graph attention network (GAT) scores accounts from their neighbourhood. Investigate the target: "
                 "pull the account, explain its GAT risk (which neighbours the attention heads focused on), map linked "
                 "accounts, decide a verdict, freeze accounts only when evidence is strong (shared devices with high-risk "
-                "accounts, brand-new accounts, disposable email), and finish with file_case_report. Cite concrete ids, "
+                "accounts, brand-new accounts, disposable email), and finish with file_case_report. freeze_account and "
+                "refund_order only PROPOSE actions; the merchant approves them. Cite concrete ids, "
                 "attention weights and amounts. Write the report in " + LANGS.get(lang, "English") + ".")
             try:
                 text = self.brain.run("investigator", system, tools,
@@ -511,7 +608,7 @@ class Team:
         call_tool("investigator", tools, "file_case_report", {
             "title": f"{verdict.replace('_', ' ').title()}: {acc['name']} ({target})", "verdict": verdict,
             "summary": f"{target} scored {exp['risk']:.2f}. " + ev[0], "accounts": [target] + [r["account"] for r in risky],
-            "evidence": ev, "recommended_actions": ["Freeze linked accounts", "Refund open orders",
+            "evidence": ev, "recommended_actions": ["Approve the proposed merchant-side restrictions", "Refund open orders",
                                                     "Add shared devices to the review list"]
             if verdict != "legitimate" else ["No action"]}, trace)
         return "\n".join(["Demo brain investigation (add a free GEMINI_API_KEY or GROQ_API_KEY for the LLM investigator).", *ev,

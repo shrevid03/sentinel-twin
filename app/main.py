@@ -293,6 +293,48 @@ def capture(order_id: str):
             "duplicate": bool(res.get("duplicate"))}
 
 
+# ------------------------------------------------------------ human review
+class ReviewIn(BaseModel):
+    reviewer: str = "merchant"
+    note: str = ""
+
+
+@app.get("/api/actions")
+def actions():
+    """The review queue: investigator proposals, held agent checkouts, and the audit trail."""
+    return {"actions": list(team.actions.values())[::-1], "holds": list(team.holds.values())[::-1],
+            "audit": team.audit[::-1]}
+
+
+def _review(fn, item_id, *args):
+    try:
+        return fn(item_id, *args)
+    except KeyError:
+        raise HTTPException(404, f"unknown id {item_id}")
+    except CaptureRefused as e:
+        raise HTTPException(e.status, e.detail)
+
+
+@app.post("/api/actions/{action_id}/approve")
+def approve_action(action_id: str, body: ReviewIn):
+    return _review(team.decide_action, action_id, True, body.reviewer, body.note)
+
+
+@app.post("/api/actions/{action_id}/reject")
+def reject_action(action_id: str, body: ReviewIn):
+    return _review(team.decide_action, action_id, False, body.reviewer, body.note)
+
+
+@app.post("/api/holds/{hold_id}/release")
+def release_hold(hold_id: str, body: ReviewIn):
+    return _review(team.decide_hold, hold_id, True, body.reviewer, body.note)
+
+
+@app.post("/api/holds/{hold_id}/reject")
+def reject_hold(hold_id: str, body: ReviewIn):
+    return _review(team.decide_hold, hold_id, False, body.reviewer, body.note)
+
+
 @app.get("/api/receipts")
 def receipts():
     return list(team.receipts.values())[::-1]

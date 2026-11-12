@@ -37,7 +37,7 @@
       <div class="cardhead"><h3>The twin: accounts, devices and IPs, coloured by GAT risk</h3>
         <div><button class="ghost" id="btn-burst">Simulate traffic burst</button> <button class="ghost" id="btn-reset-graph">Full view</button></div></div>
       <div id="graph"></div>
-      <div class="legend"><span><i class="dot acc"></i>account</span><span><i class="dot dev"></i>device</span><span><i class="dot ip"></i>IP</span><span><i class="dot hot"></i>high risk</span><span><i class="dot frozen"></i>frozen</span></div>
+      <div class="legend"><span><i class="dot acc"></i>account</span><span><i class="dot dev"></i>device</span><span><i class="dot ip"></i>IP</span><span><i class="dot hot"></i>high risk</span><span><i class="dot frozen"></i>restricted (merchant-side, simulated)</span></div>
     </div>
     <div class="side">
       <div class="card" id="explain-card"><h3>Why is it risky?</h3><p class="muted">Click any node in the twin to see which neighbours the graph attention heads focused on.</p></div>
@@ -102,6 +102,11 @@
       <button id="btn-investigate-top">Investigate riskiest</button></div>
       <div id="acc-grid" class="ag-theme-quartz-dark gridbox"></div></div>
     <div class="side">
+      <div class="card"><div class="cardhead"><h3>Review queue <small class="muted">human approval</small></h3>
+        <label class="toggle">Reviewer <input id="reviewer" value="merchant" style="width:110px"></label></div>
+        <p class="muted">The investigator only proposes refunds and merchant-side restrictions (simulated in the twin, not a PayPal account freeze). Held agent checkouts wait here too. Nothing runs until you approve.</p>
+        <div id="review-queue"></div>
+        <details><summary class="muted">Audit trail</summary><div id="review-audit"></div></details></div>
       <div class="card"><h3>Case reports</h3><div id="cases"></div></div>
       <div class="card"><h3>Investigator trace</h3><ol id="inv-trace" class="trace"></ol></div>
     </div>
@@ -178,5 +183,6 @@
 <script src="/static/app.js"></script>
 <script src="/static/drill.js"></script>
 <script src="/static/receipts.js"></script>
+<script src="/static/review.js"></script>
 </body>
 </html>
