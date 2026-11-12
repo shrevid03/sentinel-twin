@@ -118,6 +118,20 @@ h1{animation:glowon 1.4s ease-out 1.1s both}
 .phone .screen img{width:100%;height:auto;border-radius:12px;box-shadow:0 4px 14px rgba(0,20,53,.12)}
 .edfoot{background:#F5F7FA;color:#5B6B82;text-align:center;font-size:13px;padding:26px 16px 40px;border-top:1px solid #E3E8EF}
 @media (max-width:900px){.ed .row{grid-template-columns:1fr;padding:36px 0}.ed .row.flip .copy{order:0}}
+
+/* author's photos */
+.smoke .l4{opacity:.26;background:url("/static/img/sky-wisps.jpg") center/cover no-repeat;left:-10vw;top:-5vh;width:120vw;height:110vh;animation:wisp 80s ease-in-out infinite alternate}
+.smoke .par.p4{transform:translate3d(calc(var(--mx,0px) * 3),calc(var(--my,0px) * 3),0)}
+@keyframes wisp{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(-5vw,-3vh,0) scale(1.15)}}
+.media.photo{padding:0;overflow:hidden;background:#01030F}
+.media.photo img{width:100%;height:clamp(320px,38vw,560px);object-fit:cover;object-position:center 40%}
+.band{position:relative;overflow:hidden;color:#F4F9FF;text-align:center;padding:clamp(90px,12vw,160px) 20px;
+  background:linear-gradient(180deg,rgba(1,3,15,.55) 0%,rgba(2,8,40,.72) 55%,rgba(1,3,15,.92) 100%),url("/static/img/courtyard-dusk.jpg") center 30%/cover no-repeat}
+.band h2{margin:0 auto 34px;max-width:900px;font-size:clamp(40px,5.6vw,76px);line-height:1.02;font-weight:800;letter-spacing:-.03em;
+  text-shadow:0 0 18px rgba(77,163,255,.7),0 0 50px rgba(61,91,255,.5)}
+.edfoot small{display:inline-block;margin-top:6px;color:#8A97A8}
+@media (prefers-reduced-motion:reduce){.smoke .l4{animation:none}}
+.band,.edfoot{position:relative;z-index:1}
 </style>
 </head>
 <body>
@@ -126,6 +140,7 @@ h1{animation:glowon 1.4s ease-out 1.1s both}
   <div class="par p1"><div class="layer l1"></div></div>
   <div class="par p2"><div class="layer l2"></div></div>
   <div class="par p3"><div class="layer l3"></div></div>
+  <div class="par p4"><div class="layer l4"></div></div>
 </div>
 <div class="dust" aria-hidden="true"></div>
 <div class="grid" aria-hidden="true"></div>
@@ -225,14 +240,28 @@ h1{animation:glowon 1.4s ease-out 1.1s both}
     </div>
     <div class="media"><div class="browser tallcrop"><div class="bar"><i></i><i></i><i></i></div><img loading="lazy" src="/static/img/review.jpg" alt="Review queue with investigator proposals waiting for Approve or Reject"></div></div>
   </div>
+  <div class="row">
+    <div class="copy">
+      <h2>Built for every merchant.</h2>
+      <p>A fraud team, a red team and a shopping assistant, for shops that have none of them.</p>
+      <a class="pill" data-tab="command" href="/app#command">See the command center</a>
+    </div>
+    <div class="media photo"><img loading="lazy" src="/static/img/glass-dusk.jpg" alt="A curved glass office building at blue dusk, with street lamps along an empty road"></div>
+  </div>
 </section>
-<footer class="edfoot">Sentinel Twin · built on the PayPal developer platform (sandbox) · Gemini · Channel3 · AG Grid · MIT</footer>
+<section class="band" aria-label="Launch the live demo">
+  <div class="band-inner">
+    <h2>Safe checkout, before money moves.</h2>
+    <a class="btn primary" id="launch2" href="/app">Launch live demo →</a>
+  </div>
+</section>
+<footer class="edfoot">Sentinel Twin · built on the PayPal developer platform (sandbox) · Gemini · Channel3 · AG Grid · MIT<br><small>Photography: the author</small></footer>
 
 <script>
 // Opened as /static/landing.html on a server that predates the /app route? Fall back to "/" (the app) if /app is missing.
 (() => {
   const a = document.getElementById("launch");
-  const useRoot = () => { a.href = "/"; document.querySelectorAll(".pill[data-tab]").forEach((p) => (p.href = "/#" + p.dataset.tab)); };
+  const useRoot = () => { a.href = "/"; const a2 = document.getElementById("launch2"); if (a2) a2.href = "/"; document.querySelectorAll(".pill[data-tab]").forEach((p) => (p.href = "/#" + p.dataset.tab)); };
   fetch("/app", { cache: "no-store" }).then((r) => { if (!r.ok) useRoot(); }).catch(useRoot);
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll(".pulses").forEach((g) => g.remove());
 })();
