@@ -35,7 +35,7 @@ LANGS = {
 }
 
 PROVIDERS = {  # OpenAI-compatible endpoints with free tiers (or fully local)
-    "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "GEMINI_API_KEY", "gemini-2.5-flash"),
+    "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "GEMINI_API_KEY", "gemini-3.5-flash-lite"),
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY", "llama-3.3-70b-versatile"),
     "ollama": ("http://localhost:11434/v1", None, "qwen2.5:7b"),
 }
