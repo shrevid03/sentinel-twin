@@ -91,8 +91,8 @@
       const t0 = performance.now();
       const anim = (now) => {
         const k = Math.min(1, (now - t0) / 900), a = Math.sin(k * Math.PI);
-        edgesDS.update(ids.map((eid) => ({ id: eid, width: 1.2 + 3.5 * a, color: { color: `rgba(143,211,255,${(0.35 + 0.65 * a).toFixed(2)})` } })));
-        if (k < 1) requestAnimationFrame(anim); else edgesDS.update(ids.map((eid) => { const e = edgesDS.get(eid); return { id: eid, width: e.hot ? 1.6 : 1.2, color: e.hot ? EDGE_RISK : EDGE_COLOR }; }));
+        edgesDS.update(ids.map((eid) => ({ id: eid, width: 2 + 5 * a, color: { color: `rgba(143,211,255,${(0.35 + 0.65 * a).toFixed(2)})` } })));
+        if (k < 1) requestAnimationFrame(anim); else edgesDS.update(ids.map((eid) => { const e = edgesDS.get(eid); return { id: eid, width: e.hot ? 2.6 : 2, color: e.hot ? EDGE_RISK : EDGE_COLOR }; }));
       };
       requestAnimationFrame(anim);
     });

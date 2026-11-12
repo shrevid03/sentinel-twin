@@ -54,23 +54,23 @@ let network, nodesDS, edgesDS;
 /* "Midnight blue fog" palette for the twin graph */
 const RISKY = (n) => (n.risk || 0) > 0.5 && n.status !== "frozen";
 const NODE_STYLE = {
-  account: { shape: "dot", size: 9, color: "#8FD3FF", glow: "rgba(0,156,222,0.7)", blur: 14 },
-  device: { shape: "square", size: 5, color: "#4FE3FF", glow: "rgba(79,227,255,0.55)", blur: 10 },
-  ip: { shape: "triangle", size: 6, color: "#9FB3D9", glow: "rgba(159,179,217,0.45)", blur: 8 },
+  account: { shape: "dot", size: 18, color: "#A5DDFF", glow: "rgba(0,156,222,0.9)", blur: 26 },
+  device: { shape: "square", size: 10, color: "#4FE3FF", glow: "rgba(79,227,255,0.75)", blur: 16 },
+  ip: { shape: "triangle", size: 11, color: "#B4C4E4", glow: "rgba(159,179,217,0.6)", blur: 14 },
   merchant: { shape: "dot", size: 10, color: "#FFFFFF", glow: "rgba(255,255,255,0.5)", blur: 12 },
 };
-const EDGE_COLOR = { color: "rgba(120,190,255,0.35)", highlight: "rgba(160,215,255,1)", hover: "rgba(160,215,255,1)" };
-const EDGE_RISK = { color: "rgba(255,90,110,0.45)", highlight: "rgba(255,120,135,1)", hover: "rgba(255,120,135,1)" };
+const EDGE_COLOR = { color: "rgba(120,190,255,0.5)", highlight: "rgba(160,215,255,1)", hover: "rgba(160,215,255,1)" };
+const EDGE_RISK = { color: "rgba(255,90,110,0.6)", highlight: "rgba(255,120,135,1)", hover: "rgba(255,120,135,1)" };
 const visNode = (n) => {
   const st = NODE_STYLE[n.type] || NODE_STYLE.account, hot = RISKY(n), frozen = n.status === "frozen";
   const fill = frozen ? "#6B7A90" : hot ? "#FF5A6E" : st.color;
   return {
     id: n.id, label: undefined, title: n.id, raw: n, shape: st.shape,
-    size: hot && n.type === "account" ? 14 : st.size,
+    size: hot && n.type === "account" ? 26 : hot ? st.size + 3 : st.size,
     borderWidth: n.type === "merchant" ? 2.5 : frozen ? 2 : 0, shapeProperties: { borderDashes: frozen ? [3, 3] : false },
     color: { background: fill, border: n.type === "merchant" ? "#003087" : frozen ? "#C5CFDD" : fill,
       highlight: { background: hot ? "#FF8796" : "#C9ECFF", border: "#FFFFFF" }, hover: { background: hot ? "#FF8796" : "#C9ECFF", border: "#FFFFFF" } },
-    shadow: frozen ? { enabled: false } : { enabled: true, color: hot ? "rgba(255,90,110,0.75)" : st.glow, size: hot ? 22 : st.blur, x: 0, y: 0 },
+    shadow: frozen ? { enabled: false } : { enabled: true, color: hot ? "rgba(255,90,110,0.75)" : st.glow, size: hot ? 34 : st.blur, x: 0, y: 0 },
   };
 };
 let riskyClusters = [];
@@ -95,7 +95,7 @@ const visEdges = (g) => {
   const byId = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
   return g.edges.map((e) => {
     const hot = RISKY(byId[e.from] || {}) || RISKY(byId[e.to] || {});
-    return { id: `${e.from}|${e.to}`, from: e.from, to: e.to, color: hot ? EDGE_RISK : EDGE_COLOR, width: hot ? 1.6 : 1.2, hot };
+    return { id: `${e.from}|${e.to}`, from: e.from, to: e.to, color: hot ? EDGE_RISK : EDGE_COLOR, width: hot ? 2.6 : 2, hot };
   });
 };
 const graphTip = (n) => { const el = document.createElement("div"); el.className = "gtip";
@@ -107,14 +107,14 @@ async function loadGraph(focus) {
   if (!network) {
     nodesDS = new vis.DataSet(nodes); edgesDS = new vis.DataSet(edges);
     network = new vis.Network($("#graph"), { nodes: nodesDS, edges: edgesDS }, {
-      physics: { solver: "barnesHut", barnesHut: { gravitationalConstant: -3000, springLength: 90, centralGravity: 0.25, springConstant: 0.03, damping: 0.25, avoidOverlap: 0.1 },
+      physics: { solver: "barnesHut", barnesHut: { gravitationalConstant: -4200, springLength: 110, centralGravity: 0.18, springConstant: 0.03, damping: 0.25, avoidOverlap: 0.1 },
         stabilization: { iterations: 300, fit: true }, minVelocity: 0.75 },
       interaction: { hover: true, tooltipDelay: 60, hoverConnectedEdges: true, selectConnectedEdges: true },
-      edges: { width: 1.2, smooth: { type: "continuous", roundness: 0.2 }, selectionWidth: 1.5, hoverWidth: 1.2 },
+      edges: { width: 2, smooth: { type: "continuous", roundness: 0.2 }, selectionWidth: 1.5, hoverWidth: 1.2 },
       nodes: { font: { size: 0 } },
     });
     network.on("click", (p) => p.nodes[0] && explain(p.nodes[0]));
-    network.on("stabilizationIterationsDone", () => { network.setOptions({ physics: { enabled: false } }); network.fit({ animation: false, padding: 30 }); });
+    network.on("stabilizationIterationsDone", () => { network.setOptions({ physics: { enabled: false } }); network.fit({ animation: false, padding: 10 }); });
     network.on("beforeDrawing", (ctx) => {  // soft coral mist under each fraud ring
       if (!riskyClusters.length) return;
       const pos = network.getPositions(riskyClusters.flat());
@@ -123,7 +123,7 @@ async function loadGraph(focus) {
         const cx = ps.reduce((a, p) => a + p.x, 0) / ps.length, cy = ps.reduce((a, p) => a + p.y, 0) / ps.length;
         const r = 90 + Math.min(160, Math.max(...ps.map((p) => Math.hypot(p.x - cx, p.y - cy))) * 1.4);
         const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        grd.addColorStop(0, "rgba(255,90,110,0.15)"); grd.addColorStop(0.55, "rgba(255,90,110,0.07)"); grd.addColorStop(1, "rgba(255,90,110,0)");
+        grd.addColorStop(0, "rgba(255,90,110,0.2)"); grd.addColorStop(0.55, "rgba(255,90,110,0.09)"); grd.addColorStop(1, "rgba(255,90,110,0)");
         ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fill();
       });
     });
