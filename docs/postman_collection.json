@@ -2,7 +2,7 @@
   "info": {
     "name": "Sentinel Twin API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Digital twin + GAT risk engine + agent team on the PayPal developer platform. Set baseUrl to your local server or Render URL."
+    "description": "Digital twin + GAT risk engine + agent team on the PayPal developer platform. Set baseUrl to your local server or Render URL. If the server sets ADMIN_TOKEN, add the header X-Admin-Token to policy, retrain, reset and review requests."
   },
   "variable": [
     {
@@ -559,6 +559,59 @@
               "raw": "{\n  \"per_order_limit\": 150,\n  \"monthly_budget\": 400,\n  \"blocked_categories\": [\n    \"gift_cards\"\n  ]\n}"
             }
           }
+        },
+        {
+          "name": "Rules only vs GAT (latest drill)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "compare"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rules only vs GAT (fresh drill)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "compare"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seed\": 7,\n  \"apply\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     },
@@ -663,6 +716,241 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"event_type\": \"CUSTOMER.DISPUTE.CREATED\",\n  \"resource\": {\n    \"disputed_transactions\": [\n      {\n        \"seller_transaction_id\": \"CAPTURE_ID\"\n      }\n    ]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Decision receipts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/receipts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "receipts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Decision receipt by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/receipts/RCPT-XXXXXXXX",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "receipts",
+                "RCPT-XXXXXXXX"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Review & admin",
+      "item": [
+        {
+          "name": "Review queue and audit trail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/actions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve proposed action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/actions/ACT-XXXXXXXX/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions",
+                "ACT-XXXXXXXX",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer\": \"merchant\",\n  \"note\": \"evidence confirmed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reject proposed action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/actions/ACT-XXXXXXXX/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "actions",
+                "ACT-XXXXXXXX",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer\": \"merchant\",\n  \"note\": \"not enough evidence\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Release held checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/holds/HOLD-XXXXXXXX/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "holds",
+                "HOLD-XXXXXXXX",
+                "release"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer\": \"merchant\",\n  \"note\": \"known customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reject held checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/holds/HOLD-XXXXXXXX/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "holds",
+                "HOLD-XXXXXXXX",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer\": \"merchant\",\n  \"note\": \"looks off\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reset demo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reset"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
