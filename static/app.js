@@ -162,7 +162,7 @@ async function renderPay(co) {
   const slot = $("#paypal-slot");
   slot.innerHTML = `<div class="paybox"><b>Approve ${money(co.total)} with PayPal</b> <small class="muted">order ${esc(co.paypal_order_id)} · risk ${co.risk}</small>
     <div>${co.cart.map((c) => esc(`${c.qty} × ${c.name} ($${c.price})`)).join("<br>")}</div><div id="pp-buttons" style="margin-top:8px"></div></div>`;
-  const done = (status) => { slot.innerHTML = `<div class="paybox">✅ PayPal capture <b>${esc(status)}</b> for ${esc(co.paypal_order_id)}</div>`; refresh(); loadMandate(); };
+  const done = (status) => { slot.innerHTML = `<div class="paybox done">✅ PayPal capture <b>${esc(status)}</b> for ${esc(co.paypal_order_id)}</div>`; refresh(); loadMandate(); window.loadHero?.(); };
   if (CFG.paypal_mode === "sandbox" && CFG.paypal_client_id) {
     try {
       await loadPayPalSdk();

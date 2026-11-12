@@ -135,3 +135,36 @@ $("#btn-drill-rollback").onclick = async () => {
   $("#btn-drill-rollback").disabled = true;
   refresh();
 };
+
+/* Command-center hero: CTA buttons, Attack -> Analyze -> Harden -> Verify strip, real sandbox capture badge. */
+$("#hero-drill").onclick = () => showTab("drill");
+$("#hero-shop").onclick = () => { showTab("concierge"); $("#msg").focus(); };
+async function loadHero() {
+  const [d, cos] = await Promise.all([api("/api/drill/latest").catch(() => null), api("/api/checkouts").catch(() => [])]);
+  const real = cos.find((c) => c.status === "COMPLETED" && c.paypal_order_id && !String(c.paypal_order_id).startsWith("DEMO-"));
+  $("#hero-proof").innerHTML = real
+    ? `<span class="proof">✓ Real PayPal sandbox payment captured · order ${esc(real.paypal_order_id)} · ${money(real.total)}</span>` : "";
+  if (!d) {
+    $("#loop-card").innerHTML = `<div class="loop-cta"><div><h3>Attack → Analyze → Harden → Verify</h3>
+      <p class="muted" style="margin:0">No drill yet. One click runs the red team against a frozen copy of the twin, searches for a safer policy and replays the same attacks.</p></div>
+      <button id="loop-run">Run defense drill</button></div>`;
+    $("#loop-run").onclick = () => { showTab("drill"); runDrill(); };
+    return;
+  }
+  const s = d.summary || {};
+  const step = (n, title, v) => `<div class="step"><b><span class="n">${n}</span>${title}</b><span class="v">${v}</span></div>`;
+  $("#loop-card").innerHTML = `<div class="cardhead"><h3>Latest defense drill</h3><button class="ghost" id="loop-open">Open drill</button></div>
+    <div class="loop">
+      ${step(1, "Attack", `${d.attacks} synthetic attacks, ${money(d.attempted_usd)} attempted; ${money(s.breach_evaded_before_usd)} got through`)}
+      ${step(2, "Analyze", esc(d.search ? d.search.charAt(0).toUpperCase() + d.search.slice(1) : "Policies scored on fraud stopped minus false-positive cost"))}
+      ${step(3, "Harden", d.chosen ? "New policy: " + esc(changed(d.after_policy, d.before_policy)) : "Kept today's policy: nothing beat it once false positives were priced in")}
+      ${step(4, "Verify", d.chosen ? `Same attacks replayed: ${money(s.breach_evaded_before_usd)} → ${money(s.breach_evaded_after_usd)} got through; intercept rate ${pct(s.catch_rate_before)} → ${pct(s.catch_rate_after)}` : "Nothing to replay")}
+    </div>`;
+  $("#loop-card").querySelector(".loop").style.marginBottom = "0";
+  $("#loop-open").onclick = () => showTab("drill");
+}
+window.loadHero = loadHero;
+loadHero();
+const _runDrill = runDrill;
+runDrill = async (...a) => { try { return await _runDrill(...a); } finally { loadHero(); } };
+$("#btn-drill").onclick = () => runDrill();

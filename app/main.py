@@ -237,6 +237,25 @@ def drill(body: DrillIn, x_admin_token: str | None = Header(default=None)):
     return res
 
 
+@app.get("/api/drill/latest")
+def drill_latest():
+    """Compact summary of the most recent defense drill for the command-center strip (null if none yet)."""
+    if not LAST_DRILL:
+        return None
+    d = LAST_DRILL
+    attacks = d.get("probes", []) + d.get("adapted", [])
+    search = next((l.get("text", "") for l in d.get("log", []) if l.get("step") == "search"), "")
+    return {
+        "attacks": len(attacks),
+        "attempted_usd": round(sum(r.get("fraud_usd", 0) for r in attacks), 2),
+        "search": search,
+        "chosen": bool(d.get("chosen")),
+        "before_policy": d.get("before_policy"),
+        "after_policy": d.get("after_policy"),
+        "summary": d.get("summary", {}),
+    }
+
+
 @app.get("/api/compare")
 def compare_get():
     """Rules only vs GAT + rules vs GAT + rules hardened, on the latest drill's orders (runs a drill if none yet)."""
