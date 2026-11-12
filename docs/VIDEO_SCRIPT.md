@@ -22,4 +22,10 @@ Record at 1440x900 or 1920x1080 in Chrome. The header pills should read **PayPal
 
 **Honesty notes (if asked):** attack traffic is synthetic and labelled so. Channel3 provides live product data, but payment is a PayPal **sandbox** order and we don't buy from the retailer. "Restrict" is a merchant-side restriction inside the twin, not a PayPal account freeze.
 
+## Closing line (final ~25s)
+
+Use this in place of the short close at 2:35. It runs about 25 seconds, so trim ~15 seconds from the Concierge or drill beats to stay under 3:00. Show the Command center (gauge and neon graph), then cut to the landing page's final band for the last line.
+
+> "Agents are going to spend real money for people. That only works if every checkout is guarded before money moves. Sentinel Twin gives a merchant a living copy of their business: a graph model that sees fraud rings rules miss, an AI red team that attacks the twin, not customers, and a drill that turns every breach into a tested policy, while a human signs off on anything irreversible. Shop by asking. Pay with PayPal. Safely. This is Sentinel Twin."
+
 Upload to YouTube as **Public** and paste the link into Devpost.
