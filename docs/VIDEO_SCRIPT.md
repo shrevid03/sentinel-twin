@@ -1,31 +1,132 @@
-# Demo video script (target 2:45, hard limit under 3:00)
+# Demo video: full shooting script (target 2:45, hard limit under 3:00)
 
-**The one story:** an AI shopping agent buys a real product and pays with PayPal; the digital twin checks every order on its graph and leaves a receipt; the red team finds a weakness on a safe copy; a safer policy is chosen and proven on the same attacks; a human approves anything consequential.
+The whole speech, scene by scene, with what to click and how to film it. About 400 spoken words, which is roughly 2:45 at a calm pace. Read it out loud once with a timer before you record.
 
-Record at 1440x900 or 1920x1080 in Chrome. The header pills should read **PayPal sandbox · live**, **Gemini · gemini-2.5-flash** and **Channel3 · live products**. Use your own voice, no copyrighted music. Rehearse each click once.
+---
 
-**Before recording (off camera, then don't restart the app):**
-1. Run one defense drill so you know your numbers, then click *Roll back* on the Defense drill tab.
-2. In Concierge, turn off *Speak replies* if you'll talk over it.
-3. Have your PayPal **sandbox buyer** login ready for the popup.
+## Before you film (10 minutes)
 
-| Time | Click by click | Say |
-|---|---|---|
-| **0:00 to 0:25** · Landing, then Command center | Open the landing page (http://localhost:8000, or `/static/landing.html` on a server started before the landing page existed), hold on the smoky hero for 2 seconds, click **Launch live demo →**. Then start on the app hero. Scroll slowly past the **Defense score** gauge and **Decisions** donut to the twin graph. Click a coral **Ring** label (for example "Ring 1 · 8 accounts · 4 shared"). The graph zooms in and **Why is it risky?** fills with attention bars. | "AI agents are starting to spend money for us. Sentinel Twin is a digital twin of a PayPal business that catches fraud before money moves. Every buyer, device and IP is a node, and a graph attention network has found these fraud rings: accounts sharing devices. I click one, and it explains exactly which neighbours made this account risky." |
-| **0:25 to 1:05** · Concierge | Click **Try the shopping agent**. Type: *Find a coffee gift under $40*. Real **Channel3** product cards appear with photos and retailers. Type: *Buy the* [first item]. Point at the checkout card: green **mandate ticks**, the **approve** pill, then click the yellow **PayPal** button and approve in the sandbox popup. Show **capture COMPLETED**, then click **Why? (receipt)**. | "The shopping agent runs on Gemini and searches real products from twenty-five thousand retailers through Channel3. I ask it to buy one. Before any PayPal order exists, my spending mandate is checked in code, not by the model, and the twin scores the order on its graph. It's approved, so a real PayPal sandbox order is created. I approve it, and it's captured exactly once. Every checkout leaves a receipt: each mandate check, the risk split into graph and rules, the policy version and the PayPal ids." |
-| **1:05 to 1:50** · Defense drill | Click the **Defense drill** tab. Point at the **Attack flow** (red arrows get through, blue bounce off). Click **Run defense drill**. Point at a red row and its *Why* line in step 1, the **chosen** row in step 2, the **before → after** tiles in step 4. | "Now I attack my own system, on a frozen copy, with synthetic attack traffic. The red team probes, then adapts whatever got caught, and it says why. [Say your number] dollars get through. The simulator tests 216 policies and prices every good customer sent to review, so it can't just block everything. The same attacks replayed: [after number]. And on attacks it never saw, it still holds." |
-| **1:50 to 2:10** · Why a graph? | Scroll to **5 · Why a graph?** Point at the chart. Scroll back up and click **Apply hardened policy to live**. | "Why a graph? Same orders, three engines: rules alone, rules plus the graph, and the hardened policy. The graph wins on rings and device farms, new accounts that share devices. Where rules do better, the screen says so. I apply it, and the next checkout uses the safer policy." |
-| **2:10 to 2:35** · Investigator | Click **Investigator**, then **Investigate riskiest**. Show the case report. In **Review queue**, click approve on one proposal, then open **Audit trail**. | "The investigator agent maps the ring and files a case with real graph evidence. But it can't act alone: refunds and restrictions are only proposals. I approve this one, and it lands in the audit trail with my name." |
-| **2:35 to 2:45** · Close | Click **Command center**. The gauge now shows your hardened score. | "Sentinel Twin: an agent that pays with PayPal, a twin that checks every order, a red team that keeps the defense honest, and a human in charge. Open source, with 21 automated tests." |
+**Machine**
+- Let the Mac cool down if it's hot. Close every app except Chrome and your recorder. Plug in the charger.
+- Turn on **Do Not Disturb** (Control Centre → Focus) so no notifications pop up.
+- Start the app once: `cd ~/sentinel-twin && .venv/bin/uvicorn app.main:app --port 8000`. **Don't restart it again until you've finished filming**, because a restart clears the drill and payments.
 
-**Numbers to say:** read them off your own screen on the day. They move with live traffic and training. A real run on 12 Nov 2026 showed $1,808 → $443 got through and an intercept rate of 93.9% → 98.5%. Don't round in your favour.
+**Chrome**
+- Use a clean window: hide the bookmarks bar (Cmd+Shift+B), close other tabs, zoom at 100% (Cmd+0).
+- Window size about 1440x900. Full screen (Ctrl+Cmd+F) looks cleanest.
+- Open two tabs: tab 1 is the landing page (http://localhost:8000, or `/static/landing.html` if the server predates the landing page); tab 2 is the app at `/app` (or `/`).
+- Check the header pills read **PayPal sandbox · live**, **Gemini · gemini-2.5-flash** and **Channel3 · live products**.
 
-**Honesty notes (if asked):** attack traffic is synthetic and labelled so. Channel3 provides live product data, but payment is a PayPal **sandbox** order and we don't buy from the retailer. "Restrict" is a merchant-side restriction inside the twin, not a PayPal account freeze.
+**Warm-up, off camera**
+- Run one **defense drill** so you know your numbers, then click **Roll back** on the Defense drill tab.
+- In Concierge, untick **Speak replies**.
+- Have your **US personal sandbox buyer** login ready (not the business login). If the popup gives trouble, log in to the sandbox buyer once in the same Chrome profile first.
 
-## Closing line (final ~25s)
+**Recording**
+- QuickTime Player → File → New Screen Recording → Options: your mic, and **Show Mouse Clicks**. Or use OBS if you have it.
+- Record **each scene as its own clip**. Retakes are then cheap, and you cut them together at the end (iMovie is fine).
+- Talk slower than feels natural. Move the mouse slowly and stop it while you're talking about something.
+- Option that sounds better: record the clicks silently first, then record the voice-over separately on your phone in a quiet room, closer to the mic.
 
-Use this in place of the short close at 2:35. It runs about 25 seconds, so trim ~15 seconds from the Concierge or drill beats to stay under 3:00. Show the Command center (gauge and neon graph), then cut to the landing page's final band for the last line.
+---
 
+## Scene 1: The hook (0:00–0:15)
+
+**On screen:** the landing page hero, with the smoke drifting. Hold still for 2 seconds, slowly move the mouse across the smoke (it shifts a little), then click **Launch live demo →**.
+
+**Say:**
+> "AI agents are about to spend real money for people. That's exciting, and it's dangerous: one tricked agent, one fraud ring, and the money's gone. This is Sentinel Twin. It makes sure fraud is caught before money moves."
+
+**Filming tip:** start recording one second before you speak, so you have room to trim. Don't scroll on the landing page; just the hero, then Launch.
+
+---
+
+## Scene 2: The twin (0:15–0:35)
+
+**On screen:** the app's Command center. Scroll slowly past the **Defense score** gauge and the **Decisions** donut down to the neon graph. Hover one fraud-ring chip, then click it. The graph zooms in and **Why is it risky?** fills with attention bars. Point the mouse at the top bar.
+
+**Say:**
+> "This is a digital twin of a PayPal business. Every buyer, device and IP address is a node in a live graph. A graph attention network found these fraud rings, accounts quietly sharing the same devices. I click one, and it shows exactly which neighbours made this account risky."
+
+**Filming tip:** let the zoom finish before you speak the last sentence. If the chip label overlaps, click the chip anyway; it focuses the ring.
+
+---
+
+## Scene 3: Shop by asking, pay with PayPal (0:35–1:15)
+
+**On screen:**
+1. Click the **Concierge** tab. Type: *Find a coffee gift under $40*. Press Enter. Real product cards from Channel3 appear with photos.
+2. Type: *Buy the first one*. The checkout card appears.
+3. Point the mouse at the green **mandate ticks**, then the **approve** pill.
+4. Click the yellow **PayPal** button and approve in the sandbox popup.
+5. Back in the app, show **capture COMPLETED**. Click **Why? (receipt)** and let the receipt open for 2 seconds.
+
+**Say:**
+> "Now the shopping agent. It runs on Gemini, and it searches real products from thousands of retailers through Channel3. I ask it to buy one. Before any PayPal order exists, my spending limits are checked in code, not by the AI, and the twin scores the order on its graph. It's approved, so a real PayPal sandbox order is created. I approve it, and it's captured exactly once. And every checkout leaves a receipt: every check, the risk score, and the PayPal ids."
+
+**Filming tip:** the PayPal popup login is boring and shows an email address. **Cut it out in editing**: stop talking while the popup is open, and trim from the moment you click the yellow button to the moment the popup closes. Never show passwords on screen.
+
+---
+
+## Scene 4: Attack it, fix it, prove it (1:15–1:55)
+
+**On screen:**
+1. Click the **Defense drill** tab. Point at the **Attack flow** animation (red arrows get through, blue bounce off).
+2. Click **Run defense drill**.
+3. In step 1, point at one red row and its *Why* line.
+4. In step 2, point at the row marked **chosen**.
+5. In step 4, point at the **before → after** tiles.
+
+**Say:**
+> "Now I attack my own system, on a frozen copy, never on real customers. An AI red team throws fraud rings, card testing and account takeovers at the twin, and when it gets caught, it changes tactics and explains why. [Your number] dollars get through. The simulator then tests two hundred and sixteen policies, and it charges itself for every good customer it would annoy, so it can't just block everyone. Same attacks, replayed: only [your after number] gets through."
+
+**Filming tip:** read your two numbers off step 4 during your warm-up and write them on a sticky note. The drill takes a few seconds: keep talking over it, or cut the wait.
+
+---
+
+## Scene 5: Why a graph? (1:55–2:10)
+
+**On screen:** scroll down to **5 · Why a graph?** and point at the chart. Then scroll up and click **Apply hardened policy to live**.
+
+**Say:**
+> "Why a graph at all? Same orders, three engines. Rules alone catch about forty-two percent. Add the graph and it's around eighty. With the hardened policy, ninety-five. The graph wins on rings and device farms, the fraud rules can't see. I apply it, and the very next checkout is safer."
+
+**Filming tip:** if your screen shows different numbers, say yours. Don't round up.
+
+---
+
+## Scene 6: Humans stay in charge (2:10–2:25)
+
+**On screen:** click **Investigator** → **Investigate riskiest**. Let the case report appear. In **Review queue**, click **Approve** on one proposal, then open **Audit trail**.
+
+**Say:**
+> "The investigator agent maps the ring and files a case with real evidence. But it can't act alone. Refunds and restrictions are only proposals, until a person approves them. Every decision lands in the audit trail."
+
+**Filming tip:** the investigator takes a few seconds with Gemini; trim the wait.
+
+---
+
+## Scene 7: Closing (2:25–2:50)
+
+**On screen:** click **Command center**; the gauge now shows your hardened score. Hold for 3 seconds on the neon graph. Then switch to the landing page tab and scroll to the bottom band, "Safe checkout, before money moves.", and hold still to the end.
+
+**Say:**
 > "Agents are going to spend real money for people. That only works if every checkout is guarded before money moves. Sentinel Twin gives a merchant a living copy of their business: a graph model that sees fraud rings rules miss, an AI red team that attacks the twin, not customers, and a drill that turns every breach into a tested policy, while a human signs off on anything irreversible. Shop by asking. Pay with PayPal. Safely. This is Sentinel Twin."
 
-Upload to YouTube as **Public** and paste the link into Devpost.
+**Filming tip:** slow down for the last three short sentences, with a small pause before "This is Sentinel Twin." End on 2 seconds of silence over the final band, then cut.
+
+---
+
+## Editing and upload
+
+- Put the seven clips in order and trim the dead air at the start and end of each. Cut the PayPal login and any long waits.
+- Check the total is **under 3:00**. If it's long, trim scene 3 or scene 4 first.
+- No copyrighted music. Your voice alone is fine, or very quiet royalty-free music.
+- Export 1080p. Upload to YouTube as **Public**, title it "Sentinel Twin: safe AI checkout with PayPal", and paste the link into Devpost.
+
+## If someone asks (honesty notes)
+
+- Attack traffic is synthetic and labelled so on screen.
+- Channel3 provides real product data, but the payment is a PayPal **sandbox** order. We don't actually buy from the retailer.
+- "Restrict" is a merchant-side restriction inside the twin, not a PayPal account freeze.
+- The numbers move a little with live traffic and training: always say the ones on your screen.
