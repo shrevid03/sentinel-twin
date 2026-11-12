@@ -193,6 +193,7 @@ async function sendChat(text) {
     const r = await api("/api/chat", { text, session, lang: $("#lang").value });
     $("#messages").lastChild.remove();
     addMsg("bot", esc(r.reply));
+    if (r.products?.length && !r.checkout) addMsg("bot products", productCards(r.products));
     renderTrace($("#trace"), r.trace);
     if (r.checkout) renderPay(r.checkout);
     if (r.receipt_id) addMsg("sys", `<a href="#" class="rcpt-link" data-rcpt="${esc(r.receipt_id)}">Why? (decision receipt ${esc(r.receipt_id)})</a>`);
@@ -216,6 +217,14 @@ function loadPayPalSdk() {
   });
   return ppLoaded;
 }
+const safeUrl = (u) => (/^https:\/\//.test(u || "") ? u : "");
+function productCards(ps) {
+  return `<div class="c3-label">Live product data via Channel3 · payment in PayPal sandbox</div><div class="pcards">${ps.slice(0, 6).map((p) => `
+    <div class="pcard">${safeUrl(p.image) ? `<img src="${esc(safeUrl(p.image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<div class="noimg"></div>`}
+      <div class="pc-body"><div class="pc-name">${esc(p.name)}</div><div class="pc-meta"><b>$${Number(p.price).toFixed(2)}</b> · ${esc(p.merchant)}</div>
+      ${p.category === "gift_cards" ? `<div class="pc-warn">gift card · blocked by your mandate</div>` : ""}
+      ${safeUrl(p.retailer_url) ? `<a href="${esc(safeUrl(p.retailer_url))}" target="_blank" rel="noopener noreferrer">View at retailer ↗</a>` : ""}</div></div>`).join("")}</div>`;
+}
 async function renderPay(co) {
   const slot = $("#paypal-slot");
   let rc = null;
@@ -223,6 +232,8 @@ async function renderPay(co) {
   const dec = rc?.risk?.decision || "approve";
   const checks = rc?.mandate_checks || [];
   slot.innerHTML = `<div class="paybox">
+    ${co.cart.some((c) => c.source === "channel3") ? `<div class="c3-label">Live product data via Channel3 · payment in PayPal sandbox (we don't buy from the retailer)</div>` : ""}
+    ${co.cart.filter((c) => c.source === "channel3" && safeUrl(c.image)).slice(0, 1).map((c) => `<div class="pc-hero"><img src="${esc(safeUrl(c.image))}" alt="" referrerpolicy="no-referrer"><span>${esc(c.merchant)}${safeUrl(c.retailer_url) ? ` · <a href="${esc(safeUrl(c.retailer_url))}" target="_blank" rel="noopener noreferrer">View at retailer ↗</a>` : ""}</span></div>`).join("")}
     ${co.cart.map((c) => `<div class="item"><span>${esc(c.qty > 1 ? c.qty + " × " : "")}${esc(c.name)}</span><span class="price">$${(c.price * (c.qty || 1)).toFixed(2)}</span></div>`).join("")}
     ${checks.length ? `<ul class="checks">${checks.map((c) => `<li class="${c.pass ? "" : "no"}">${esc(c.check)}</li>`).join("")}</ul>` : ""}
     <div class="meta"><span>Risk decision <span class="decision ${esc(dec)}">${esc(dec)}</span> · score ${Number(co.risk ?? rc?.risk?.score ?? 0).toFixed(2)}</span>
@@ -441,6 +452,9 @@ function refresh() { loadStats(); loadFeed(); }
   const BR = { claude: "Claude", gemini: "Gemini", groq: "Groq", ollama: "Ollama (local)" };
   $("#b-brain").textContent = CFG.brain === "demo" ? "AI · demo brain" : `${BR[CFG.brain] || CFG.brain} · ${CFG.model}`;
   $("#b-brain").className = "badge " + (CFG.brain === "demo" ? "off" : "on");
+  const c3 = !!CFG.integrations?.channel3;
+  $("#b-c3").hidden = false; $("#b-c3").textContent = c3 ? "Channel3 · live products" : "Channel3 · off (demo catalog)";
+  $("#b-c3").className = "badge " + (c3 ? "on" : "off");
   $("#auto").checked = CFG.auto_traffic;
   $("#lang").innerHTML = Object.entries(CFG.languages).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   $("#lang").onchange = setChips; setChips();

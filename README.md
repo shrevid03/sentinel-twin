@@ -67,6 +67,7 @@ Ranges are across our runs on 12 Nov 2026 (GAT training and live traffic vary). 
 | Red team and Defense drill | Real code paths: the same risk engine and policy that score live orders. | All attack traffic is synthetic, on a fork of the twin, labelled **Synthetic attack traffic**. The drill's adaptations are a fixed, reproducible playbook; the Red team tab's are chosen by the LLM when a key is set (each launch shows **decided by**). |
 | Investigator | Uses real graph evidence and PayPal order lookups. Approved refunds go through PayPal. | "Freeze" is a **merchant-side restriction inside the twin (simulated)**, not a PayPal account freeze. |
 | AI agents | With a Gemini, Groq or Claude key: LLM tool-use loops. | With no key: a scripted demo brain drives the same tools. The header badge says which. |
+| Shopping catalog | With `CHANNEL3_API_KEY`: real products, prices, photos and retailer links from Channel3, labelled **Live product data via Channel3**. | Payment is a PayPal **sandbox** order for that title and price; we never buy from the retailer. Without a key, or on any Channel3 error, the agent silently uses the demo catalog. |
 
 ---
 
@@ -128,6 +129,7 @@ With no AI key at all, a deterministic **demo brain** drives the same tools, so 
 
 ## Sponsor tools used
 
+* **Channel3**: gives the shopping agent real products from 25,000+ retailers (set `CHANNEL3_API_KEY`). Live products go through exactly the same mandate guard and graph risk gate as demo items: a Channel3 gift card is still blocked by the `gift_cards` rule, and over-limit items are still rejected (`tests/test_channel3.py`). Red-team prompt-injection probes keep using the poisoned demo catalog.
 * **AG Grid** (Community): accounts, red-team results, orders, checkouts and API call grids (sorting, filtering, pagination, quick filter, custom cell renderers).
 * **Render**: `render.yaml` blueprint for one-click deploy with a health check.
 * **Postman**: `docs/postman_collection.json` covers all 36 API operations, with sample bodies.

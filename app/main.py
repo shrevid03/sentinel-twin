@@ -172,7 +172,11 @@ class ChatIn(BaseModel):
 @app.post("/api/chat")
 def chat(body: ChatIn):
     try:
-        return team.concierge(body.session, body.text, body.lang)
+        team.last_live = []
+        res = team.concierge(body.session, body.text, body.lang)
+        res["products"] = [{k: p.get(k) for k in ("sku", "name", "price", "merchant", "image", "retailer_url", "brand", "category")}
+                           for p in getattr(team, "last_live", [])]
+        return res
     except Exception as e:
         raise HTTPException(500, f"agent error: {e}")
 

@@ -232,6 +232,7 @@ class Team:
                 return {"results": demo}
             try:
                 live = [i for i in channel3.search(query, max_price, limit=6) if not category or i["category"] == category]
+                self.last_live = live
                 return {"results": live + demo[:4],
                         "note": "Live product data via Channel3 (source=channel3) plus demo items (source=demo)."}
             except Exception as e:  # noqa: BLE001 - silent fallback, never break checkout

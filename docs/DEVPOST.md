@@ -67,8 +67,10 @@ The twin's population is synthetic and seeded, because sandbox accounts don't pr
 ## What's next
 Catching warm-up orders from synthetic identities, sparse attention for millions of nodes, mirroring PayPal transaction history into the twin, and letting the red team retrain the GAT on the attacks it invents.
 
+**Channel3 live products.** With a Channel3 key, the Concierge shops real products from 25,000+ retailers (real titles, prices, photos and retailer links). The mandate guard and the graph risk gate still decide every checkout, and payment is a PayPal sandbox order: we don't buy from the retailer. Without a key it falls back to the demo catalog.
+
 ## Built with
-python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, vis-network, chart.js
+python, fastapi, numpy, graph-attention-network, gemini, groq, ollama, claude, paypal-orders-api, paypal-payments-api, paypal-webhooks, paypal-js-sdk, web-speech-api, ag-grid, render, postman, apimatic, vis-network, chart.js, channel3
 
 ## Testing instructions (fill in before submitting)
 1. Live demo: <Render URL>
