@@ -15,6 +15,7 @@
     const N = 60, LINK = 130;
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2), r = cv.getBoundingClientRect();
+      if (!r.width || !r.height) return;
       W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       if (!pts.length) pts = Array.from({ length: N }, (_, i) => ({ x: Math.random() * W, y: Math.random() * H,
         vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35, r: 1.4 + Math.random() * 2.2, c: i % 3 ? "0,112,224" : "0,156,222" }));
@@ -42,12 +43,13 @@
       draw(); raf = requestAnimationFrame(step);
     };
     const sync = () => {
+      if (!W && cv.getBoundingClientRect().width) resize();
       const want = !reduce && visible && !document.hidden && document.querySelector("#tab-command.active");
       if (want && !running) { running = true; raf = requestAnimationFrame(step); }
       else if (!want && running) { running = false; cancelAnimationFrame(raf); }
     };
     resize(); draw();
-    window.addEventListener("resize", () => { resize(); draw(); });
+    new ResizeObserver(() => { if (cv.getBoundingClientRect().width) { resize(); draw(); } }).observe(cv);
     document.addEventListener("visibilitychange", sync);
     new IntersectionObserver((e) => { visible = e[0].isIntersecting; sync(); }).observe(cv);
     const _st = showTab; showTab = (t) => { _st(t); sync(); };

@@ -166,7 +166,7 @@ async function renderPay(co) {
   const dec = rc?.risk?.decision || "approve";
   const checks = rc?.mandate_checks || [];
   slot.innerHTML = `<div class="paybox">
-    ${co.cart.map((c) => `<div class="item"><span>${esc(c.qty > 1 ? c.qty + " × " : "")}${esc(c.name)}</span><span class="price">${money(c.price * (c.qty || 1))}</span></div>`).join("")}
+    ${co.cart.map((c) => `<div class="item"><span>${esc(c.qty > 1 ? c.qty + " × " : "")}${esc(c.name)}</span><span class="price">$${(c.price * (c.qty || 1)).toFixed(2)}</span></div>`).join("")}
     ${checks.length ? `<ul class="checks">${checks.map((c) => `<li class="${c.pass ? "" : "no"}">${esc(c.check)}</li>`).join("")}</ul>` : ""}
     <div class="meta"><span>Risk decision <span class="decision ${esc(dec)}">${esc(dec)}</span> · score ${Number(co.risk ?? rc?.risk?.score ?? 0).toFixed(2)}</span>
       <span>PayPal order ${esc(co.paypal_order_id)}${co.receipt_id ? ` · <a href="#" class="rcpt-link" data-rcpt="${esc(co.receipt_id)}">Why? (receipt)</a>` : ""}</span></div>
